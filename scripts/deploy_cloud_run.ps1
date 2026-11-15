@@ -16,7 +16,9 @@ param(
   [string]$Region = "us-central1",
   [switch]$AllowVercelPreviews                           # also accept https://*.vercel.app preview URLs
 )
-$ErrorActionPreference = "Stop"
+# gcloud prints progress on stderr; through gcloud.ps1 PowerShell turns that into error records, so "Stop" would abort
+# on normal output. Failures are detected from $LASTEXITCODE instead (see Step).
+$ErrorActionPreference = "Continue"
 $Repo = "redreturn"; $Service = "redreturn-api"
 $WebOrigin = $WebOrigin.TrimEnd("/")
 $Image = "$Region-docker.pkg.dev/$ProjectId/$Repo/$($Service):latest"
