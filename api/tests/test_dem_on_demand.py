@@ -122,6 +122,19 @@ def test_long_range_uses_exact_subsampled_source_values(remote, monkeypatch):
     assert remote["n"] == n                                                          # cached grid reused
 
 
-def test_long_range_refuses_the_antimeridian(remote):
-    r = client.post("/api/routes/long-range", json={"origin": {"lat": 0, "lon": 175}, "destination": {"lat": 0, "lon": -175}})
-    assert r.status_code == 422 and r.json()["error"]["code"] == "crosses_antimeridian"
+def test_long_range_between_opposite_sides_goes_the_long_way_round(remote, monkeypatch):
+    monkeypatch.setattr(mola_remote, "_coarse_cache", {})
+    r = client.post("/api/routes/long-range", json={"origin": {"lat": 18.65, "lon": -133.8}, "destination": {"lat": 18.38, "lon": 77.58}})
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert [x["strategy"] for x in j["routes"]] == ["terrain"]                 # no great-circle line off the grid
+    assert any("180° meridian" in t for t in j["limitations"])
+
+
+def test_far_science_stop_is_a_clear_error(monkeypatch):
+    monkeypatch.setenv("REDRETURN_DEM_ON_DEMAND", "0")
+    body = {"origin": {"lat": 18.65, "lon": -133.8}, "destination": {"lat": 18.9, "lon": -133.5},
+            "science_stops": [{"name": "Old Jezero stop", "lat": 18.5, "lon": 77.38, "dwell_hours": 0.75}]}
+    r = client.post("/api/routes/alternatives", json=body)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "stop_outside_area"
+    assert "Old Jezero stop" in r.json()["error"]["message"]

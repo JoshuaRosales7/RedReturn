@@ -29,7 +29,7 @@ export function LongRangeSummary({ lr }: { lr: LongRange }) {
   return <>
     <div className="kpis">
       <Stat label="Mode" value="Long-range" detail="overview route, not a local excursion" />
-      <Stat label="Route length" value={`${kmFmt(r.metrics.distance_km)} km`} detail={`terrain-aware, one way (${kmFmt(lr.routes.find(x => x.strategy === "shortest")?.metrics.distance_km ?? 0)} km straight)`} />
+      <Stat label="Route length" value={`${kmFmt(r.metrics.distance_km)} km`} detail={(() => { const st = lr.routes.find(x => x.strategy === "shortest"); return st ? `terrain-aware, one way (${kmFmt(st.metrics.distance_km)} km straight)` : "terrain-aware, one way (stays west/east of the 180° meridian)"; })()} />
       <Stat label="Driving time" value={`${kmFmt(e.drivingHours)} h`} detail={`≈ ${e.sols} sols at 6 h/sol${e.legs === 2 ? ", there and back" : ""} (estimate)`} tone="warn" />
       <Stat label="Grid spacing" value={`${fmt(lr.grid.spacing_m / 1000, 1)} km`} detail="sampled MOLA, hazards invisible" tone="warn" />
     </div>

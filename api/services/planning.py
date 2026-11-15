@@ -11,6 +11,7 @@ import numpy as np
 from ..errors import ApiError
 from ..datasets import mola_remote
 from ..scientific import dem
+from ..scientific.geodesy import haversine_km
 from ..scientific.mission import RouteSummary, evaluate
 from ..scientific.routing import Mobility, optimised_route, shortest_route
 
@@ -83,8 +84,26 @@ def science_value(route: dict, stops: list[dict]) -> float:
     return 1.0 + sum(s["weight"] for s in (route.get("science_stops_visited") or []))
 
 
+def _span_deg(p, q) -> float:
+    """Largest latitude / longitude separation in degrees (longitude difference taken the short way round)."""
+    return max(abs(p[0] - q[0]), abs(((p[1] - q[1]) + 540) % 360 - 180))
+
+
+def check_stops_near(a, b, stops) -> None:
+    """Science stops must lie in the local planning area of the route (else a forgotten stop would drag the area elsewhere)."""
+    far = [s for s in stops if _span_deg((s.lat, s.lon), a) > mola_remote.MAX_SPAN_DEG or _span_deg((s.lat, s.lon), b) > mola_remote.MAX_SPAN_DEG]
+    if far:
+        s = far[0]
+        km = min(haversine_km(s.lat, s.lon, *a), haversine_km(s.lat, s.lon, *b))
+        raise ApiError(422, "stop_outside_area",
+                       f"Science stop '{s.name or 'unnamed'}' is {km:,.0f} km from the route; stops must lie within {mola_remote.MAX_SPAN_DEG:.0f}° "
+                       "of both base and target. Move or remove it in Planner.",
+                       {"stops": [{"name": x.name, "lat": x.lat, "lon": x.lon} for x in far]})
+
+
 def alternatives(origin, dest, cfg, stops, strategies) -> dict:
     a, b = (origin.lat, origin.lon), (dest.lat, dest.lon)
+    check_stops_near(a, b, stops)
     tile = require_tile([a, b], [(s.lat, s.lon) for s in stops])
     mob = Mobility.from_config(cfg)
     skey = stops_key(stops)
@@ -178,7 +197,8 @@ def long_range(origin, dest, cfg) -> dict:
     tile = dem.DemTile(meta={"id": f"coarse_{g['bounds_px']['row_off']}_{g['bounds_px']['col_off']}_{g['factor']}", "name": "MOLA long-range grid"},
                        z=g["z"], lon_left=g["lon_left"], lat_top=g["lat_top"], dlon=g["dlon"], dlat=g["dlat"])
     mob = Mobility.from_config(cfg)
-    routes = [public(shortest_route(tile, a, b, mob)), public(optimised_route(tile, "terrain", a, b, mob))]
+    wraps = abs(((a[1] + 540) % 360 - 180) - ((b[1] + 540) % 360 - 180)) > 180     # the great circle would cross the 180° meridian
+    routes = ([] if wraps else [public(shortest_route(tile, a, b, mob))]) + [public(optimised_route(tile, "terrain", a, b, mob))]
     zz, ss, pf = _pooled(tile.z, tile.slope_deg)
     h, w = zz.shape
     cell = lambda v: None if np.isnan(v) else round(float(v), 1)  # noqa: E731
@@ -195,5 +215,8 @@ def long_range(origin, dest, cfg) -> dict:
                         "source_pixel_m": g["source_pixel_m"], "display_pixel_m": tile.pixel_m * pf,
                         "elevation_m": [cell(v) for v in zz.ravel()], "slope_deg": [cell(v) for v in ss.ravel()],
                         "notes": ["Display product of the long-range grid (block mean for display only)."]},
-        "limitations": LONG_RANGE_LIMITATIONS, "certification": "NOT_CERTIFIABLE",
+        "limitations": LONG_RANGE_LIMITATIONS + ([
+            "The straight (great-circle) line between these points crosses the 180° meridian, which this grid does not wrap: only the "
+            "terrain-aware route, which stays on the grid and goes the long way round, is shown."] if wraps else []),
+        "certification": "NOT_CERTIFIABLE",
     }

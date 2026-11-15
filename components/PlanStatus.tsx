@@ -68,18 +68,20 @@ export function PlanStatus({ what = "terrain analysis", feature = "This analysis
     endpoint_blocked: "That point lies inside an area the planner treats as obstructed. Move it or relax the slope limit in Planner.",
     no_traversable_route: "No path stays under the slope limit with known elevation. Move a point, or raise the slope limit in Planner (a scenario assumption).",
     grid_too_large: "Local planning works for excursions up to roughly 150 km. Move the base and target closer together (the demo route is about 25 km).",
-    crosses_antimeridian: "Pick both points on the same side of the 180° meridian.",
     nodata: "The MOLA DEM has no elevation here. Move the points slightly.",
     dem_download_failed: "The API could not download MOLA elevations for this new area — its host may have no internet access. Retry, or use a cached window (Jezero, Gale).",
+    timeout: "The API is still working — usually downloading real MOLA elevations for a large or new area, which depends on the NASA/USGS server. Retry in a moment; finished downloads are kept, so the next try is faster.",
+    stop_outside_area: "Science stops must be near the route (within about 150 km of both base and target). Remove or move the stop in Planner.",
+    crosses_antimeridian: "Base and target sit on both sides of the 180° meridian; local planning does not wrap there. Move both points to the same side.",
     download_rate_limited: "Several new areas were requested in a short time. Wait a minute and retry, or use an area that is already stored.",
     dem_source_changed: "The NASA/USGS source file no longer matches the verified layout, so RedReturn refuses to read it. Use a cached window.",
     validation_error: "Some inputs are out of range. Check the coordinates and Planner values.",
   };
-  const retryable = !hint[err.code] || err.code === "dem_download_failed" || err.code === "download_rate_limited";
-  const title: Record<string, string> = { grid_too_large: "Base and target are too far apart", dem_download_failed: "Elevation download failed", no_traversable_route: "No traversable route under the slope limit", download_rate_limited: "Please wait a moment" };
+  const retryable = !hint[err.code] || ["dem_download_failed", "download_rate_limited", "timeout"].includes(err.code);
+  const title: Record<string, string> = { grid_too_large: "Base and target are too far apart", dem_download_failed: "Elevation download failed", no_traversable_route: "No traversable route under the slope limit", download_rate_limited: "Please wait a moment", timeout: "The API is taking longer than expected", stop_outside_area: "A science stop is outside the route area" };
   return <div className="problem" role="alert">
     <h2 className="problem-title">{title[err.code] ?? "Route planning failed"}</h2>
     <p className="small"><b>{err.message}</b> {hint[err.code] ?? "This may be temporary."}</p>
-    <div className="row">{retryable && <button className="btn sm" onClick={() => void s.refreshAlternatives()}><RefreshCw size={13} aria-hidden />Retry</button>}{demoBtn}{explorerBtn}</div>
+    <div className="row">{retryable && <button className="btn sm" onClick={() => void s.refreshAlternatives()}><RefreshCw size={13} aria-hidden />Retry</button>}{err.code === "stop_outside_area" && <button className="btn sm primary" onClick={() => s.setStops([])}>Remove all science stops</button>}{demoBtn}{explorerBtn}</div>
   </div>;
 }

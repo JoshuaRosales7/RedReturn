@@ -22,6 +22,7 @@ export function RegionMap({ layer, origin, destination, coverage, onPick, focus,
   const [center, setCenter] = useState<{ lat: number; lon: number }>(() => ({ lat: (origin.lat + destination.lat) / 2, lon: origin.lon + normalizeLon(destination.lon - origin.lon) / 2 }));
   const [z, setZ] = useState(6);
   const drag = useRef<{ x: number; y: number; c: { lat: number; lon: number }; moved: boolean } | null>(null);
+  const [tileFail, setTileFail] = useState<{ key: string; n: number }>({ key: "", n: 0 });   // failed Trek tiles for the current layer/level
 
   useEffect(() => {
     const el = box.current; if (!el) return;
@@ -110,7 +111,9 @@ export function RegionMap({ layer, origin, destination, coverage, onPick, focus,
       <div ref={box} className="rm-stage" style={{ height: H }} tabIndex={0} role="application"
         aria-label={`Close-up map, about ${scaleKm.km} km per ${Math.round(scaleKm.w)} pixels. Drag or arrow keys to pan, plus and minus to zoom, click to place the ${selection === "origin" ? "base" : "target"}.`}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { drag.current = null; }} onKeyDown={key}>
-        {measured && tiles.map(t => <img key={t.key} src={t.src} alt="" draggable={false} className="rm-tile" style={{ left: t.x, top: t.y, width: T + 0.5, height: T + 0.5 }} />)}
+        {measured && tiles.map(t => <img key={t.key} src={t.src} alt="" draggable={false} className="rm-tile" style={{ left: t.x, top: t.y, width: T + 0.5, height: T + 0.5 }}
+          onError={() => setTileFail(f => (f.key === `${layer}/${tz}` ? { key: f.key, n: f.n + 1 } : { key: `${layer}/${tz}`, n: 1 }))} />)}
+        {tileFail.key === `${layer}/${tz}` && tileFail.n > 0 && <div className="rm-offline" role="status">NASA Trek imagery is not responding right now ({tileFail.n} tile{tileFail.n > 1 ? "s" : ""} failed). Clicks, coordinates, routes and the MOLA terrain analysis still work.</div>}
         {measured && <svg width={W} height={H} className="rm-overlay" aria-hidden>
           {coverage.map(c => { const [x0, y0] = px({ lat: c.bounds.lat_max, lon: c.bounds.lon_min }); const w = (c.bounds.lon_max - c.bounds.lon_min) * ppd, h = (c.bounds.lat_max - c.bounds.lat_min) * ppd; return <rect key={c.id} x={x0} y={y0} width={w} height={h} fill="rgba(98,184,164,.1)" stroke="#62b8a4" strokeWidth={1.5} strokeDasharray="5 4" />; })}
           <path d={line(gc)} fill="none" stroke="#0a0d11" strokeWidth={4} opacity={.5} />

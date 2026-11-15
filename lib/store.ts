@@ -17,6 +17,8 @@ type Busy = { alt: boolean; risk: boolean; scenario: boolean; ares: boolean; hf:
 type Demo = Pick<Snapshot["demo"], "origin" | "destination" | "science_stops" | "config" | "incident" | "runs" | "seed">;
 
 type Store = {
+  /** Set when science stops were dropped because base/target moved far away (shown in Planner and Explorer). */
+  stopsNotice: string | null;
   /** EVA start (UTC ms); null = automatic (30 min after the next sunrise at the base). */
   evaStartUtc: number | null; setEvaStart: (t: number | null) => void;
   tab: Tab; visited: Tab[]; origin: Point; destination: Point; stops: Stop[]; config: MissionConfig;
@@ -51,7 +53,9 @@ const fresh = (k: keyof Busy) => { ctrl[k]?.abort(); const c = new AbortControll
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const round = (p: Point) => ({ lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5) });
 export const toErr = (e: unknown): ErrInfo => e instanceof ApiFailure
-  ? { code: e.code, message: e.offline ? "API offline" : e.message, offline: e.offline, details: e.details }
+  ? e.code === "timeout"                                     // reachable but slow (e.g. downloading a large area): not "offline"
+    ? { code: "timeout", message: "The API did not answer in time", offline: false, details: e.details }
+    : { code: e.code, message: e.offline ? "API offline" : e.message, offline: e.offline, details: e.details }
   : { code: "client_error", message: e instanceof Error ? e.message : "Unexpected error", offline: false };
 
 /** Route that Risk Lab, Emergency and ARES analyse: the user's pick if it exists in the current plan, else the recommendation. */
@@ -96,6 +100,13 @@ export const useMissionStore = create<Store>((set, get) => {
   /** Apply an input change; re-plan (debounced) only when the request would actually differ. */
   const change = (patch: Partial<Store>) => {
     const before = get().planKey();
+    // Moving base or target away leaves science stops of the old area behind: drop those outside the new local area.
+    if (("origin" in patch || "destination" in patch) && !("stops" in patch)) {
+      const o = patch.origin ?? get().origin, d = patch.destination ?? get().destination;
+      const kept = get().stops.filter(st => routeReach(st, o).local && routeReach(st, d).local);
+      const n = get().stops.length - kept.length;
+      if (n) patch = { ...patch, stops: kept, stopsNotice: `${n} science stop${n > 1 ? "s" : ""} far from the new base and target ${n > 1 ? "were" : "was"} removed.` };
+    }
     set(patch);
     if (get().planKey() === before) return;
     invalidate();
@@ -166,7 +177,8 @@ export const useMissionStore = create<Store>((set, get) => {
     setDestination: destination => change({ destination }),
     setPoint: p => (get().selection === "origin" ? get().setOrigin(p) : get().setDestination(p)),
     setConfig: c => change({ config: { ...get().config, ...c } }),
-    setStops: stops => change({ stops }),
+    setStops: stops => change({ stops, stopsNotice: null }),
+    stopsNotice: null,
     setStrategy: strategy => { if (strategy === get().strategy) return; set({ strategy }); dropDownstream(); },
     setIncidents: incidents => { ctrl.scenario?.abort(); set(s => ({ incidents, scenario: null, errors: { ...s.errors, scenario: undefined }, sources: { ...s.sources, scenario: undefined }, busy: { ...s.busy, scenario: false } })); },
     setIncidentProgress: incidentProgress => { ctrl.scenario?.abort(); set(s => ({ incidentProgress, scenario: null, errors: { ...s.errors, scenario: undefined }, sources: { ...s.sources, scenario: undefined }, busy: { ...s.busy, scenario: false } })); },

@@ -207,7 +207,7 @@ _REFERENCE_TIF = Path(__file__).resolve().parent.parent / "data" / "dem" / "mola
 
 
 # --- long-range (strategic) grids -----------------------------------------------------------------------------------
-COARSE_MAX_CELLS = int(os.getenv("REDRETURN_LONG_RANGE_MAX_CELLS", "150000"))   # keeps routing bounded (routing.MAX_GRID_CELLS)
+COARSE_MAX_CELLS = int(os.getenv("REDRETURN_LONG_RANGE_MAX_CELLS", "80000"))    # ~8–13 MB read for a planet-wide box   # keeps routing bounded (routing.MAX_GRID_CELLS)
 _coarse_cache: dict[tuple, dict] = {}
 
 
@@ -215,8 +215,7 @@ def coarse_window(points: list[tuple[float, float]]) -> tuple[float, float, floa
     """Lat/lon box for a long route: the points plus a margin for detours (15% of the span, at least 1°)."""
     lats = [p[0] for p in points]
     lons = [((p[1] + 540) % 360) - 180 for p in points]
-    if max(lons) - min(lons) > 180:
-        raise RemoteDemError("crosses_antimeridian", "Long-range routes across the 180° meridian are not supported yet; pick points on the same side.")
+    # The grid never wraps at ±180°: points on opposite sides get a box spanning the long way round, which is still valid.
     m = max(1.0, 0.15 * max(max(lats) - min(lats), max(lons) - min(lons)))
     return max(-89.5, min(lats) - m), min(89.5, max(lats) + m), max(-180.0, min(lons) - m), min(180.0, max(lons) + m)
 

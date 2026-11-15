@@ -316,3 +316,4 @@ fieldset.ptset legend { padding: 0; margin-bottom: 2px; }
   .notice { background: #fff !important; color: #000 !important; }
   .tscroll { overflow: visible; }
 }
+.rm-offline { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); max-width: 90%; padding: 6px 10px; border-radius: 6px; background: rgba(10,13,17,.9); border: 1px solid #6b5226; color: #e8cf9b; font-size: 12px; text-align: center; pointer-events: none; }

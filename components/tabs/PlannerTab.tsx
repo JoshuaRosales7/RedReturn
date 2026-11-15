@@ -1,6 +1,7 @@
 "use client";
 import { Plus, Route as RouteIcon, Trash2 } from "lucide-react";
 import { useMissionStore, workingStrategy } from "@/lib/store";
+import { routeReach } from "@/lib/coverage";
 import { fmt, factor, STRATEGY_COLOR, STRATEGY_LABEL, hours } from "@/lib/format";
 import { Badge, Loading, NextStep, NumField, Notice, PageHead, Panel, Range, SourceBadge } from "../ui";
 import { PlanStatus } from "../PlanStatus";
@@ -38,7 +39,8 @@ export function PlannerTab() {
           <NumField label="Dose limit" unit="mSv" value={c.maxRadiationMsv} min={0.01} step={0.1} onChange={v => s.setConfig({ maxRadiationMsv: v })} hint="scenario limit, not regulatory" />
           <label className="row small"><input type="checkbox" checked={c.returnRequired} onChange={e => s.setConfig({ returnRequired: e.target.checked })} />Return to base required (RedReturn rule)</label>
         </div></Panel>
-        <Panel title="Science stops" right={<button className="btn sm" disabled={s.stops.length >= 5} onClick={() => s.setStops([...s.stops, { name: `Stop ${s.stops.length + 1}`, lat: +((s.origin.lat + s.destination.lat) / 2).toFixed(3), lon: +((s.origin.lon + s.destination.lon) / 2).toFixed(3), dwell_hours: 0.75, weight: 1 }])}><Plus size={13} />Add</button>}>
+        <Panel title="Science stops" right={<button className="btn sm" disabled={s.stops.length >= 5 || !routeReach(s.origin, s.destination).local} title={routeReach(s.origin, s.destination).local ? undefined : "Science stops need a local excursion (base and target within ~150 km)"} onClick={() => s.setStops([...s.stops, { name: `Stop ${s.stops.length + 1}`, lat: +((s.origin.lat + s.destination.lat) / 2).toFixed(3), lon: +((s.origin.lon + s.destination.lon) / 2).toFixed(3), dwell_hours: 0.75, weight: 1 }])}><Plus size={13} />Add</button>}>
+          {s.stopsNotice && <p className="tiny" style={{ color: "var(--warn)", margin: "0 0 6px" }} role="status">{s.stopsNotice}</p>}
           {s.stops.length === 0 && <p className="tiny muted">None. Without declared stops the science-prioritised strategy is disabled (no science-value dataset exists to rank terrain).</p>}
           {s.stops.map((st, i) => <div key={i} className="grid g3" style={{ marginBottom: 8, alignItems: "end" }}>
             <NumField label={`Stop ${i + 1} lat`} value={st.lat} min={-90} max={90} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lat: v } : x)))} /><NumField label={`Stop ${i + 1} lon`} value={st.lon} min={-180} max={180} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lon: v } : x)))} />

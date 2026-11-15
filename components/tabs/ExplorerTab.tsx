@@ -56,6 +56,7 @@ export function ExplorerTab() {
               ? <div><b>Distance {km} km</b> · local excursion: detailed analysis on the 463 m MOLA grid, with Risk Lab, Emergency and ARES.</div>
               : <div><b>Distance {km} km</b> · long-range route: an overview on a sampled MOLA grid with travel and supply estimates. Risk Lab, Emergency and ARES need points within ~150 km.</div>}
           </div>
+          {s.stopsNotice && <p className="small" style={{ color: "var(--warn)", margin: 0 }} role="status">{s.stopsNotice}</p>}
           {reach.local && cover.length > 0 && (diag.ok
             ? <p className="small row" style={{ flexWrap: "nowrap", color: "var(--ok)" }} role="status"><CheckCircle2 size={15} aria-hidden style={{ flex: "none" }} />Both points are in the {diag.window.name} — elevations are ready.</p>
             : s.apiState === "offline"

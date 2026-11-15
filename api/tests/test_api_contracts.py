@@ -56,7 +56,7 @@ def test_alternatives_contract():
 
 
 def test_outside_coverage_alternatives_typed_error():
-    b = {**BODY, "destination": {"lat": -5.4, "lon": 137.8}}
+    b = {**BODY, "destination": {"lat": -5.4, "lon": 137.8}, "science_stops": []}   # stops would fail first (stop_outside_area)
     err(client.post("/api/routes/alternatives", json=b), 422, "outside_dem_coverage")
 
 
