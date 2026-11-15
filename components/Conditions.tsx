@@ -106,13 +106,21 @@ export function SpaceWeatherPanel({ limit = 4 }: { limit?: number }) {
 /** Ground-level context: latest raw images from the NASA rover operating in the region, if any. */
 export function GroundView() {
   const s = useMissionStore();
-  const q = `/api/conditions/surface-images?lat=${s.origin.lat.toFixed(2)}&lon=${s.origin.lon.toFixed(2)}&n=8`;
+  const [nearest, setNearest] = useState(false);
+  const site = `${s.origin.lat.toFixed(2)},${s.origin.lon.toFixed(2)}`;
+  const [nearestFor, setNearestFor] = useState(site);
+  const showNearest = nearest && nearestFor === site;               // a new base asks again instead of reusing the choice
+  const q = `/api/conditions/surface-images?lat=${s.origin.lat.toFixed(2)}&lon=${s.origin.lon.toFixed(2)}&n=8${showNearest ? "&nearest=true" : ""}`;
   const r = useApiGet<SurfaceImages>(q);
+  const ref = !!r.data?.reference_only;
   return (
-    <Panel title="Ground view from NASA rovers" tour="groundview" right={r.data?.rover ? <Badge tone="info">{r.data.rover.name} · {r.data.rover.region}</Badge> : undefined}>
+    <Panel title="Ground view from NASA rovers" tour="groundview" right={r.data?.rover ? <Badge tone={ref ? "warn" : "info"}>{r.data.rover.name} · {r.data.rover.region}{ref ? ` · ${r.data.distance_km?.toLocaleString("en-US")} km away — reference only` : ""}</Badge> : undefined}>
       {r.loading && <Loading label="Looking for rover images of this region…" />}
       {r.error && <div className="stack small"><span className="muted">{r.error.offline ? "Unavailable while the API is offline." : `Unavailable: ${r.error.message}`}</span><button className="btn sm" onClick={r.reload}><RefreshCw size={13} aria-hidden />Retry</button></div>}
-      {r.data && !r.data.rover && <p className="small muted" style={{ margin: 0 }}><Camera size={13} aria-hidden style={{ verticalAlign: "-2px" }} /> {r.data.note} Nearest: {r.data.nearest?.name} in {r.data.nearest?.region}, {r.data.nearest?.distance_km.toLocaleString("en-US")} km away.</p>}
+      {r.data && !r.data.rover && <div className="stack small">
+        <p className="muted" style={{ margin: 0 }}><Camera size={13} aria-hidden style={{ verticalAlign: "-2px" }} /> {r.data.note} Nearest: {r.data.nearest?.name} in {r.data.nearest?.region}, {r.data.nearest?.distance_km.toLocaleString("en-US")} km away.</p>
+        <button className="btn sm" style={{ justifySelf: "start" }} onClick={() => { setNearest(true); setNearestFor(site); }}><Camera size={13} aria-hidden />Show {r.data.nearest?.name}&apos;s latest images as a general reference</button>
+      </div>}
       {r.data?.rover && <>
         <div className="gallery">{r.data.images.map(im => <a key={im.url} href={im.page ?? im.full_url} target="_blank" rel="noreferrer noopener" className="shot">
           <img src={im.url} alt={`${im.title ?? `${r.data!.rover!.name} image`} (${im.camera}, sol ${im.sol})`} loading="lazy" referrerPolicy="no-referrer" />

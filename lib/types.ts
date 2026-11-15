@@ -75,6 +75,6 @@ export type LongRange = {
 export type SpaceWeather = { source: string; window_days: number; start: string; end: string; retrieved_at: string; note: string;
   items: { type: string; label: string; issued: string | null; url: string | null; mentions_mars: boolean; summary: string }[];
   excluded_earth_only: { type: string; label: string; count: number }[] };
-export type SurfaceImages = { rover: { id: string; name: string; region: string; credit: string } | null; distance_km?: number; note: string;
+export type SurfaceImages = { rover: { id: string; name: string; region: string; credit: string } | null; distance_km?: number; reference_only?: boolean; note: string;
   nearest?: { name: string; region: string; distance_km: number };
   images: { url: string; full_url: string; sol: number; camera: string; taken_utc: string | null; title: string | null; credit: string; page: string | null }[] };

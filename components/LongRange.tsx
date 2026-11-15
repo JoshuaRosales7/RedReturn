@@ -9,6 +9,7 @@ import type { LongRange } from "@/lib/types";
 import { Badge, Loading, Notice, Panel, Range, Stat } from "./ui";
 import { ProfileChart } from "./charts";
 import { TerrainMap } from "./TerrainMap";
+import { GroundView } from "./Conditions";
 
 const Mesh = dynamic(() => import("./TerrainMesh3D"), { ssr: false, loading: () => <Loading label="Building 3D terrain…" /> });
 const kmFmt = (v: number) => Math.round(v).toLocaleString("en-US");
@@ -64,6 +65,7 @@ export function LongRangeTerrain({ lr }: { lr: LongRange }) {
         <Panel title="What this overview cannot tell you"><ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>{lr.limitations.map(l => <li key={l}>{l}</li>)}</ul></Panel>
         <Notice>Slopes on a {fmt(lr.grid.spacing_m / 1000, 1)} km grid look gentle even across crater walls and scarps; the slope limit is therefore not a meaningful check here.</Notice>
       </div>
+      <div className="c12"><GroundView /></div>
       <div className="c12"><Panel title="Elevation profile (overview grid)"><ProfileChart routes={lr.routes} maxSlope={s.config.maxSlopeDeg} show={show} source={`MOLA values sampled every ${fmt(lr.grid.spacing_m / 1000, 1)} km (long-range overview grid), interpolated along the route; along-track slopes at this spacing hide real steepness`} /></Panel></div>
     </div>
   </>;

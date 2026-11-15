@@ -14,6 +14,7 @@ def space_weather(days: int = Query(30, ge=1, le=60)):
 
 
 @router.get("/surface-images")
-def surface_images(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=360), n: int = Query(8, ge=1, le=24)):
+def surface_images(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=360), n: int = Query(8, ge=1, le=24),
+                   nearest: bool = Query(False, description="Also return the nearest rover's images when it is far away (reference only)")):
     """Latest raw rover images when the location is inside a NASA rover's operating region (cached)."""
-    return conditions.surface_images(lat, lon, n)
+    return conditions.surface_images(lat, lon, n, nearest)

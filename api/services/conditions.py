@@ -130,14 +130,21 @@ def _msl(n: int) -> list[dict]:
     return out[:n]
 
 
-def surface_images(lat: float, lon: float, n: int = 8) -> dict:
+def surface_images(lat: float, lon: float, n: int = 8, nearest: bool = False) -> dict:
     near = sorted(((haversine_km(lat, lon, r["lat"], r["lon"]), r) for r in ROVERS), key=lambda x: x[0])
     dist, rover = near[0]
-    if dist > rover["radius_km"]:
+    far = dist > rover["radius_km"]
+    if far and not nearest:
         return {"rover": None, "images": [], "nearest": {"name": rover["name"], "region": rover["region"], "distance_km": round(dist)},
                 "note": "No NASA rover operates near this location, so there are no ground-level images for it."}
     images = _cached(f"img:{rover['id']}:{n}", IMAGES_TTL_S, lambda: _m2020(n) if rover["id"] == "perseverance" else _msl(n))
-    return {"rover": {k: rover[k] for k in ("id", "name", "region", "credit")}, "distance_km": round(dist), "images": images,
-            "note": (f"Latest raw images from {rover['name']} in {rover['region']}. They show the kind of ground you will meet, "
-                     "taken somewhere in the region on recent sols — not at your waypoints (the feed gives no rover position). "
-                     "Raw, unprocessed images: colours and exposure are not calibrated.")}
+    if far:
+        note = (f"No rover operates at your site. These are the latest raw images from {rover['name']} in {rover['region']}, "
+                f"{round(dist):,} km away — a general reference for what the Martian surface looks like, not your terrain. "
+                "Raw, unprocessed images: colours and exposure are not calibrated.")
+    else:
+        note = (f"Latest raw images from {rover['name']} in {rover['region']}. They show the kind of ground you will meet, "
+                "taken somewhere in the region on recent sols — not at your waypoints (the feed gives no rover position). "
+                "Raw, unprocessed images: colours and exposure are not calibrated.")
+    return {"rover": {k: rover[k] for k in ("id", "name", "region", "credit")}, "distance_km": round(dist), "reference_only": far,
+            "images": images, "note": note}

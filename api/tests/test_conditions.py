@@ -21,10 +21,14 @@ M2020 = {"images": [
 ]}
 
 
+MSL = {"items": [{"https_url": "https://mars.nasa.gov/msl-raw-images/msss/05073/mcam/x.jpg", "sol": 5073, "instrument": "MAST_RIGHT",
+                   "date_taken": "2026-11-13T17:24:28.000Z", "title": "Sol 5073: Mastcam", "link": "/raw_images/1"}]}
+
+
 def _mock(monkeypatch, calls):
     def fake(url, params):
         calls.append(url)
-        return DONKI if "DONKI" in url else M2020
+        return DONKI if "DONKI" in url else MSL if "raw_image_items" in url else M2020
     monkeypatch.setattr(conditions, "_fetch_json", fake)
     monkeypatch.setattr(conditions, "_cache", {})
 
@@ -49,6 +53,9 @@ def test_surface_images_only_inside_a_rover_region(monkeypatch):
     assert "not at your waypoints" in j["note"]
     far = client.get("/api/conditions/surface-images", params={"lat": 40, "lon": -100}).json()
     assert far["rover"] is None and far["images"] == [] and far["nearest"]["distance_km"] > 1000
+    ref = client.get("/api/conditions/surface-images", params={"lat": 40, "lon": -100, "nearest": True}).json()
+    assert ref["reference_only"] is True and ref["images"] and "not your terrain" in ref["note"]
+    assert client.get("/api/conditions/surface-images", params={"lat": 18.38, "lon": 77.58}).json()["reference_only"] is False
 
 
 def test_upstream_failure_is_a_typed_error(monkeypatch):
