@@ -6,7 +6,7 @@ export const TAB_KEYS = { overview: "1", explorer: "2", terrain: "3", planner: "
 /** Open the app and wait until the demo has been loaded and planned. */
 export async function openApp(page: Page, opts: { offline?: boolean; tour?: boolean } = {}) {
   if (!opts.tour) await page.addInitScript(() => { try { localStorage.setItem("redreturn.tour.v1", "done"); } catch { /* ignore */ } });   // the guided tour is covered by its own test
-  if (opts.offline) await page.route(/localhost:8000/, r => r.abort("connectionrefused"));
+  if (opts.offline) await page.route(url => url.href.startsWith(API), r => r.abort("connectionrefused"));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Can the crew reach the target/ })).toBeVisible();
   await expect(page.locator(".chip", { hasText: opts.offline ? "API offline" : "API online" })).toBeVisible({ timeout: 20_000 });

@@ -12,3 +12,7 @@ services:
     environment:
       REDRETURN_CORS_ORIGINS: http://localhost:3000
     ports: ["8000:8000"]
+    volumes:
+      - dem-cache:/app/api/data/dem/ondemand   # MOLA areas downloaded on demand survive restarts
+volumes:
+  dem-cache:

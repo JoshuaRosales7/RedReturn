@@ -27,14 +27,22 @@ export const CATALOG: CatalogEntry[] = [
 /** Mars Trek WMTS layers; level-0 tiles (cols 0 and 1) answered HTTP 200 with open CORS on 2026-11-14. */
 export const TREK_BASE = "https://trek.nasa.gov/tiles/Mars/EQ";
 export const LAYERS = [
-  { id: "colorshade", name: "MOLA color shade", kind: "Topographic (visual)", layer: "Mars_MGS_MOLA_ClrShade_merge_global_463m", ext: "jpg", note: "Colour is not elevation." },
-  { id: "viking", name: "Viking MDIM 2.1 color", kind: "Optical", layer: "Mars_Viking_MDIM21_ClrMosaic_global_232m", ext: "jpg", note: "232 m/px mosaic." },
-  { id: "themis-day", name: "THEMIS day IR", kind: "Thermal", layer: "THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018", ext: "png", note: "Radiance image, not calibrated temperature." },
-  { id: "themis-night", name: "THEMIS night IR", kind: "Thermal", layer: "THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018", ext: "png", note: "Radiance image, not calibrated temperature." },
-  { id: "tes-ti", name: "TES thermal inertia", kind: "Thermal", layer: "TES_Thermal_Inertia", ext: "png", note: "Coarse surface-property proxy." },
+  { id: "colorshade", name: "MOLA color shade", kind: "Topographic (visual)", layer: "Mars_MGS_MOLA_ClrShade_merge_global_463m", ext: "jpg", maxZoom: 7, note: "Colour is not elevation." },
+  { id: "viking", name: "Viking MDIM 2.1 color", kind: "Optical", layer: "Mars_Viking_MDIM21_ClrMosaic_global_232m", ext: "jpg", maxZoom: 7, note: "232 m/px mosaic." },
+  { id: "themis-day", name: "THEMIS day IR", kind: "Thermal", layer: "THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018", ext: "png", maxZoom: 7, note: "Radiance image, not calibrated temperature." },
+  { id: "themis-night", name: "THEMIS night IR", kind: "Thermal", layer: "THEMIS_NightIR_ControlledMosaics_100m_v2_oct2018", ext: "png", maxZoom: 7, note: "Radiance image, not calibrated temperature." },
+  { id: "tes-ti", name: "TES thermal inertia", kind: "Thermal", layer: "TES_Thermal_Inertia", ext: "png", maxZoom: 1, note: "Coarse surface-property proxy." },
 ] as const;
 export type LayerId = (typeof LAYERS)[number]["id"];
 export const tileUrl = (layerId: LayerId, col: 0 | 1) => {
   const l = LAYERS.find(x => x.id === layerId)!;
   return `${TREK_BASE}/${l.layer}/1.0.0/default/default028mm/0/0/${col}.${l.ext}`;
+};
+
+/** Highest WMTS level checked to exist for each layer (HTTP 200 on 2026-11-15); deeper requests return 404. */
+export const maxZoom = (layerId: LayerId) => LAYERS.find(x => x.id === layerId)!.maxZoom;
+/** Equirectangular WMTS tile: level z has 2^z rows × 2^(z+1) columns of 256 px, each 180/2^z degrees wide. */
+export const tileUrlZ = (layerId: LayerId, z: number, row: number, col: number) => {
+  const l = LAYERS.find(x => x.id === layerId)!;
+  return `${TREK_BASE}/${l.layer}/1.0.0/default/default028mm/${z}/${row}/${col}.${l.ext}`;
 };

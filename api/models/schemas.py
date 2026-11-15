@@ -150,3 +150,5 @@ class ReportRequest(BaseModel):
     seed: int = Field(20261114, ge=0, lt=2**32)
     incident_progress: float = Field(0.5, ge=0, le=1)
     incident: Incident | None = None
+    incidents: list[Incident] | None = Field(None, max_length=4)   # supersedes `incident` when given
+    strategy: RouteStrategy | None = None                          # working plan; default = recommended route

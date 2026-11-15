@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -144,7 +145,7 @@ class DemTile:
 
 
 def _load(meta_path: Path) -> DemTile:
-    meta = json.loads(meta_path.read_text())
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
     tif = meta_path.with_name(meta["file"])
     if not tif.exists():
         raise DemError("dem_file_missing", f"DEM file {tif.name} is missing; run scripts/build_mola_windows.py")
@@ -163,13 +164,33 @@ def _load(meta_path: Path) -> DemTile:
     return DemTile(meta=meta, z=z, lon_left=lon_left, lat_top=lat_top, dlon=dlon, dlat=dlat)
 
 
+# windows downloaded for user routes (api/datasets/mola_remote.py); overridable so tests never see real downloads
+ONDEMAND_DIR = Path(os.getenv("REDRETURN_DEM_CACHE_DIR") or DEM_DIR / "ondemand")
+
+
+def sidecars() -> list[Path]:
+    """Shipped windows first (they win when windows overlap), then on-demand downloads."""
+    return sorted(DEM_DIR.glob("mola_*.json")) + sorted(ONDEMAND_DIR.glob("mola_*.json"))
+
+
 @lru_cache(maxsize=1)
 def _registry() -> dict[str, DemTile]:
     tiles: dict[str, DemTile] = {}
-    for p in sorted(DEM_DIR.glob("mola_*.json")):
+    for p in sidecars():
         tile = _load(p)
         tiles[tile.id] = tile
     return tiles
+
+
+def remove_tile(tile_id: str) -> None:
+    _registry().pop(tile_id, None)
+
+
+def add_tile(meta_path: Path) -> DemTile:
+    """Register a window written at runtime (on-demand download) without reloading the others."""
+    tile = _load(meta_path)
+    _registry().setdefault(tile.id, tile)
+    return _registry()[tile.id]
 
 
 def all_tiles() -> dict[str, DemTile]:

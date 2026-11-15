@@ -7,12 +7,13 @@ const AX = { stroke: "#6c7a89", fontSize: 11 };
 const GRID = "#1b2531";
 const TIP = { contentStyle: { background: "#0f141a", border: "1px solid #243040", borderRadius: 6, fontSize: 12 }, labelStyle: { color: "#9aa7b5" } };
 
-export function ProfileChart({ routes, maxSlope, show }: { routes: RouteAlt[]; maxSlope: number; show: string[] }) {
+type ProfileRoute = Pick<RouteAlt, "strategy" | "profile">;
+export function ProfileChart({ routes, maxSlope, show, source = "463 m MOLA DEM, bilinear-interpolated along the route" }: { routes: ProfileRoute[]; maxSlope: number; show: string[]; source?: string }) {
   const sel = routes.filter(r => show.includes(r.strategy));
-  const rows = (r: RouteAlt, key: "elevation_m" | "slope_deg") => r.profile.distance_km.map((d, i) => ({ d: +d.toFixed(3), v: r.profile[key][i] }));
+  const rows = (r: ProfileRoute, key: "elevation_m" | "slope_deg") => r.profile.distance_km.map((d, i) => ({ d: +d.toFixed(3), v: r.profile[key][i] }));
   return (
     <div className="stack" role="group" aria-label="Elevation and slope profile along route">
-      <div className="tiny muted">Elevation (m above MOLA areoid) vs distance (km). Source: 463 m MOLA DEM, bilinear-interpolated along the route.</div>
+      <div className="tiny muted">Elevation (m above MOLA areoid) vs distance (km). Source: {source}.</div>
       <ResponsiveContainer width="100%" height={190}>
         <ComposedChart margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid stroke={GRID} /><XAxis type="number" dataKey="d" {...AX} domain={[0, "dataMax"]} unit=" km" /><YAxis {...AX} width={52} domain={["auto", "auto"]} />

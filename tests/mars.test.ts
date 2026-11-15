@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CONFIG, evaluateMission, evaluateSummary, flatSummary, greatCircleDistance, initialBearing, interpolateGreatCircle, normalizeLon, MARS_RADIUS_KM } from "../lib/mars";
+import { coordinateToVector, vectorToCoordinate, DEFAULT_CONFIG, evaluateMission, evaluateSummary, flatSummary, greatCircleDistance, initialBearing, interpolateGreatCircle, normalizeLon, MARS_RADIUS_KM } from "../lib/mars";
 import { buildConceptualTerrain, conceptualElevationM } from "../lib/terrain";
 import { CATALOG, LAYERS, tileUrl } from "../data/catalog";
 import { apiConfig, fromApiConfig } from "../lib/store";
@@ -69,4 +69,13 @@ describe("Conceptual terrain (educational mode only)", () => {
 describe("Catalog", () => {
   it("has valid bounded coordinates", () => { expect(CATALOG.length).toBeGreaterThanOrEqual(15); for (const c of CATALOG) { expect(Math.abs(c.lat)).toBeLessThanOrEqual(90); expect(Math.abs(c.lon)).toBeLessThanOrEqual(180); expect(c.name.length).toBeGreaterThan(0); } });
   it("builds layer tile urls for both level-0 columns", () => { for (const l of LAYERS) { expect(tileUrl(l.id, 0)).toMatch(/\/0\/0\/0\.(jpg|png)$/); expect(tileUrl(l.id, 1)).toMatch(/\/0\/0\/1\.(jpg|png)$/); } });
+});
+
+describe("Globe picking", () => {
+  it.each([[18.38, 77.58], [-5.4, 137.8], [0, -120], [60, 10], [-85, 179.5], [0, 0]])("round-trips %s, %s through the globe projection", (lat, lon) => {
+    const [x, y, z] = coordinateToVector({ lat, lon }, 2.0);
+    const p = vectorToCoordinate(x, y, z);
+    expect(p.lat).toBeCloseTo(lat, 9);
+    expect(((p.lon - lon + 540) % 360) - 180).toBeCloseTo(0, 9);
+  });
 });

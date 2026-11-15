@@ -29,3 +29,9 @@ def compare(req: CompareRequest):
 @router.post("/alternatives")
 def alternatives(req: AlternativesRequest):
     return planning.alternatives(req.origin, req.destination, req.config, req.science_stops, req.strategies)
+
+
+@router.post("/long-range")
+def long_range(req: AlternativesRequest):
+    """Strategic overview route for points too far apart for local planning (subsampled real MOLA grid)."""
+    return planning.long_range(req.origin, req.destination, req.config)

@@ -1,9 +1,10 @@
 "use client";
 import { Plus, Siren, Trash2 } from "lucide-react";
-import { useMissionStore } from "@/lib/store";
-import { fmt, FACTOR_LABEL } from "@/lib/format";
+import { useMissionStore, workingStrategy } from "@/lib/store";
+import { fmt, factor, STRATEGY_LABEL } from "@/lib/format";
 import type { IncidentKind } from "@/lib/types";
-import { Badge, Empty, ErrorState, Loading, Notice, NumField, PageHead, Panel, Range } from "../ui";
+import { Badge, Empty, ErrorState, Loading, NextStep, Notice, NumField, PageHead, Panel, Range, SourceBadge } from "../ui";
+import { PlanStatus } from "../PlanStatus";
 
 const KINDS: { id: IncidentKind; label: string; unit: string; def: number; max: number }[] = [
   { id: "battery_loss", label: "Battery capacity loss", unit: "%", def: 35, max: 100 },
@@ -20,19 +21,20 @@ const fmtCell = (v: number | boolean | null | undefined) => (typeof v === "boole
 
 export function EmergencyTab() {
   const s = useMissionStore(); const sc = s.scenario; const alt = s.alternatives;
-  if (!alt) return <Panel title="Emergency simulator">{s.busy.alt ? <Loading label="Planning routes first…" /> : <Empty title="Plan a route first">The simulator breaks the recommended plan.</Empty>}</Panel>;
+  if (!alt) return <div className="stack" style={{ gap: 12 }}><PageHead icon={Siren} title="Emergency">Break the working plan on purpose and compare recovery options. It needs a route plan first.</PageHead><Panel title="Route plan needed"><PlanStatus what="route plan" feature="The emergency simulator" /></Panel></div>;
+  const strategy = workingStrategy(s); const err = s.errors.scenario;
   return (
     <div className="stack" style={{ gap: 12 }}>
-    <PageHead icon={Siren} title="Emergency">Break the plan on purpose, then compare continuing, rerouting, skipping science and aborting to base. Incident sizes are what-ifs.</PageHead>
+    <PageHead icon={Siren} title="Emergency" right={<SourceBadge source={sc ? s.sources.scenario : undefined} />}>Break the plan on purpose, then compare continuing, rerouting, skipping science and aborting to base. Route: <b>{STRATEGY_LABEL[strategy]}</b>. Incident sizes are what-ifs with unknown likelihood.</PageHead>
     <div className="dash">
       <div className="col c4 side-sticky">
-        <Panel title="1 · Choose the incident(s)" right={<button className="btn sm" disabled={s.incidents.length >= 4} onClick={() => s.setIncidents([...s.incidents, { kind: "travel_delay", magnitude: 1.5 }])}><Plus size={13} />Add</button>}>
+        <Panel title="1 · Choose the incident(s)" tour="incident" right={<button className="btn sm" disabled={s.incidents.length >= 4} onClick={() => s.setIncidents([...s.incidents, { kind: "travel_delay", magnitude: 1.5 }])}><Plus size={13} />Add</button>}>
           {s.incidents.map((inc, i) => { const k = KINDS.find(x => x.id === inc.kind)!; return (
             <div key={i} className="stack" style={{ marginBottom: 10 }}>
               <div className="row" style={{ flexWrap: "nowrap" }}>
-                <label className="field" style={{ flex: 1 }}><span>Incident</span><select value={inc.kind} onChange={e => { const n = KINDS.find(x => x.id === e.target.value)!; s.setIncidents(s.incidents.map((x, j) => (j === i ? { kind: n.id, magnitude: n.def } : x))); }}>{KINDS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
-                <NumField label={k.unit} value={inc.magnitude} min={0} max={k.max} step={k.unit === "h" ? 0.25 : 1} onChange={v => s.setIncidents(s.incidents.map((x, j) => (j === i ? { ...x, magnitude: v } : x)))} />
-                <button className="btn sm" aria-label="Remove incident" disabled={s.incidents.length === 1} onClick={() => s.setIncidents(s.incidents.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
+                <label className="field" style={{ flex: 1, minWidth: 0 }}><span>Incident {i + 1}</span><select value={inc.kind} onChange={e => { const n = KINDS.find(x => x.id === e.target.value)!; s.setIncidents(s.incidents.map((x, j) => (j === i ? { kind: n.id, magnitude: n.def } : x))); }}>{KINDS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
+                <NumField label={`Size of incident ${i + 1}`} unit={k.unit} value={inc.magnitude} min={0} max={k.max} step={k.unit === "h" ? 0.25 : 1} onChange={v => s.setIncidents(s.incidents.map((x, j) => (j === i ? { ...x, magnitude: v } : x)))} />
+                <button className="btn sm" aria-label={`Remove incident ${i + 1}`} disabled={s.incidents.length === 1} onClick={() => s.setIncidents(s.incidents.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
               </div>
             </div>); })}
           <Range label="Occurs after outbound progress" value={Math.round(s.incidentProgress * 100)} min={0} max={100} step={5} unit="%" onChange={v => s.setIncidentProgress(v / 100)} />
@@ -42,8 +44,10 @@ export function EmergencyTab() {
       </div>
       <div className="col c8">
         {s.busy.scenario && !sc && <Loading label="Recomputing resources, replanning on the DEM…" />}
-        {s.errors.scenario && <ErrorState message={s.errors.scenario} retry={() => void s.runScenario()} />}
-        {!sc && !s.busy.scenario && !s.errors.scenario && <Panel title="Result"><Empty title="Nothing simulated yet">Pick the incident and press “Simulate failure &amp; replan”.</Empty></Panel>}
+        {err && (err.offline
+          ? <ErrorState message="API offline — the simulator cannot run" retry={() => void s.retryConnection()} retryLabel="Retry connection">Offline, only the precomputed result for the Jezero demo route with its default incidents is available. Other incidents are never estimated.</ErrorState>
+          : <ErrorState message={`Simulation failed: ${err.message}`} retry={() => void s.runScenario()} />)}
+        {!sc && !s.busy.scenario && !err && <Panel title="Result"><Empty title="Nothing simulated yet">Pick the incident and press “Simulate failure &amp; replan”.</Empty></Panel>}
         {sc && <>
           <Panel title="What happened" right={<span className="tiny dim num">at {fmt(sc.incident.elapsed_hours)} h · {fmt(sc.incident.position.lat, 3)}°, {fmt(sc.incident.position.lon, 3)}°</span>}>
             <ul className="small stack" style={{ margin: 0, paddingLeft: 18 }}>{sc.incident.applied.map(a => <li key={a}>{a}</li>)}</ul>
@@ -58,11 +62,12 @@ export function EmergencyTab() {
             {sc.options.map(o => <tr key={o.id} className={sc.revised?.id === o.id ? "sel" : ""}>
               <td><b>{o.label}</b>{sc.revised?.id === o.id && <> <Badge tone="info">chosen</Badge></>}{o.status === "blocked" && <div className="tiny dim">{o.reason}</div>}</td>
               <td>{o.status === "blocked" ? <Badge tone="bad">blocked</Badge> : o.feasible_within_model ? <Badge tone="ok">feasible</Badge> : <Badge tone="bad">infeasible</Badge>}</td>
-              <td className="n">{o.status === "ok" ? `${FACTOR_LABEL[o.limiting_factor!]} ${fmt(o.limiting_margin_percent)}%` : "—"}</td><td className="n">{o.total_hours !== undefined ? `${fmt(o.total_hours)} h` : "—"}</td>
+              <td className="n">{o.status === "ok" ? `${factor(o.limiting_factor!)} ${fmt(o.limiting_margin_percent)}%` : "—"}</td><td className="n">{o.total_hours !== undefined ? `${fmt(o.total_hours)} h` : "—"}</td>
               <td className="tiny">{o.required_additional ? Object.entries(o.required_additional).filter(([, v]) => v > 0.005).map(([k, v]) => `${k.replace("_", " ")} +${fmt(v, 2)}`).join(", ") || "—" : "—"}</td></tr>)}
           </tbody></table></div></Panel>
           {sc.contingency_levers.length > 0 && <Panel title="Model-supported contingency actions" right={<Badge tone="info">class B · calculation</Badge>}><ul className="small stack" style={{ margin: 0, paddingLeft: 18 }}>{sc.contingency_levers.map(l => <li key={l.id}>{l.action}: margin {fmt(l.limiting_margin_percent)}% ({l.delta_percent_points >= 0 ? "+" : ""}{fmt(l.delta_percent_points)} pts){l.feasible_within_model ? " — feasible" : ""}</li>)}</ul></Panel>}
           <Panel title="Unavoidable uncertainty"><ul className="small muted stack" style={{ margin: 0, paddingLeft: 18 }}>{sc.unavoidable_uncertainty.map(u => <li key={u}>{u}</li>)}</ul></Panel>
+          <NextStep detail="Next: ask ARES why, or export the full analysis." label="Ask ARES" onClick={() => s.setTab("ares")} />
         </>}
       </div>
     </div>

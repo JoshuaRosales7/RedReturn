@@ -1,3 +1,10 @@
+import os
+
+import tempfile
+
+os.environ.setdefault("REDRETURN_DEM_ON_DEMAND", "0")   # tests never hit the network; on-demand download has its own mocked tests
+os.environ["REDRETURN_DEM_CACHE_DIR"] = tempfile.mkdtemp(prefix="redreturn-dem-")   # never load windows downloaded by a real run
+
 import numpy as np
 import pytest
 

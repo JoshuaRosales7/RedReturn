@@ -63,3 +63,12 @@ export type Snapshot = { snapshot: { generated_at_utc: string; git_commit: strin
   alternatives: Alternatives; risk: Risk; scenario: Scenario; ares: Record<string, AresAnswer>; heightfield: Heightfield; datasets: Datasets; coverage: { items: Coverage[] } };
 export type IncidentKind = "battery_loss" | "speed_reduction" | "oxygen_increase" | "water_loss" | "extended_science" | "travel_delay" | "comms_reduction" | "route_obstruction";
 export type Incident = { kind: IncidentKind; magnitude: number };
+/** Route on the long-range grid: same geometry/profile/metrics shape as a local route, without the excursion mission model. */
+export type LongRoute = Pick<RouteAlt, "strategy" | "status" | "note" | "objective" | "coordinates" | "profile" | "metrics" | "constraints_violated">
+  & { summary: { one_way_km: number; effective_km: number; ascent_out_m: number; ascent_back_m: number } };
+export type LongRange = {
+  mode: "long_range";
+  grid: { spacing_m: number; factor: number; source_pixel_m: number; rows: number; cols: number; valid_fraction: number; sampling: string;
+    bounds: { lat_min: number; lat_max: number; lon_min: number; lon_max: number }; source: { dataset: string; range_read_url: string; etag: string | null } };
+  routes: LongRoute[]; heightfield: Heightfield; limitations: string[]; certification: string;
+};

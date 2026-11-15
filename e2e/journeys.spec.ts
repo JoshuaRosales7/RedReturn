@@ -150,10 +150,14 @@ test.describe("API unavailable (safe fallback)", () => {
     expect(d.suggestedFilename()).toBe("redreturn-report-offline.json");
     // a non-demo input cannot be answered offline: explicit error, no fabricated route
     await gotoTab(page, "explorer");
-    await page.getByLabel("Lat").nth(1).fill("18.7");
+    await page.getByLabel("Target latitude").fill("18.7");
     await gotoTab(page, "planner");
     await expect(page.getByText("API offline").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("table.t", { hasText: "Ascent" })).toHaveCount(0);
+    await expect(page.locator(".chip", { hasText: "Precomputed snapshot" })).toHaveCount(0);      // discarded snapshot results lose their label too
+    await page.getByRole("button", { name: "Load Jezero demo route" }).click();                     // recovery restores the labelled snapshot
+    await expect(page.locator("table.t", { hasText: "Ascent" }).first().locator("tbody tr")).toHaveCount(4);
+    await expect(page.locator(".chip", { hasText: "Precomputed snapshot" })).toBeVisible();
   });
 });
 
@@ -205,5 +209,146 @@ test.describe("Terrain map", () => {
     const box = await page.locator(".mesh-stage").boundingBox();
     expect(box!.height).toBeGreaterThan(300);
     expect((await page.locator("#main .mesh canvas").screenshot()).length).toBeGreaterThan(20_000);
+  });
+});
+
+test.describe("DEM coverage guidance", () => {
+  test("a failed elevation download is explained, old results are not shown, and the demo button restores a valid analysis", async ({ page }) => {
+    await page.route(/\/api\/routes\/long-range$/, r => r.fulfill({ status: 502, contentType: "application/json",
+      body: JSON.stringify({ error: { code: "dem_download_failed", message: "Could not download MOLA elevations for this area (is the API host online?).", details: {} } }) }));
+    await openApp(page);
+    await gotoTab(page, "explorer");
+    await page.getByLabel("Target latitude").fill("0");
+    await page.getByLabel("Target longitude").fill("0");
+    await expect(page.locator(".reach.long")).toContainText("long-range route");          // shown before any calculation
+    await gotoTab(page, "terrain");
+    await expect(page.getByRole("heading", { name: "Elevation download failed" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("canvas[aria-label^='Shaded relief']")).toHaveCount(0);      // no stale map for the old coordinates
+    await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();               // a download can succeed on retry
+    await page.getByRole("button", { name: "Load Jezero demo route" }).click();
+    await expect(page.locator("canvas[aria-label^='Shaded relief']")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator(".stat", { hasText: "Window coverage" })).toContainText("100.0%");
+  });
+
+  test("Gale example route plans inside the Gale window", async ({ page }) => {
+    await openApp(page);
+    await gotoTab(page, "explorer");
+    await page.getByRole("button", { name: "Use Gale example route" }).click();
+    await expect(page.getByText(/Both points are in the Gale/)).toBeVisible();
+    await gotoTab(page, "terrain");
+    await expect(page.locator(".stat", { hasText: "Window coverage" })).toContainText("Gale", { timeout: 20_000 });
+    await expect(page.locator("canvas[aria-label^='Shaded relief']")).toBeVisible();
+  });
+});
+
+test.describe("Onboarding", () => {
+  test("tour spotlights each section, ends with a quick start, and the glossary explains key terms", async ({ page }) => {
+    await openApp(page, { tour: true });
+    const dlg = page.getByRole("dialog", { name: /Guided tour/ });
+    await expect(dlg).toContainText("Real Mars terrain");
+    await dlg.getByRole("button", { name: "Take the tour" }).click();
+    await expect(page.locator('[data-tour="flow"].tour-target')).toBeVisible();            // the mission-steps strip is highlighted
+    await expect(dlg).toContainText("Key idea");
+    await dlg.getByRole("button", { name: "Next" }).click();
+    await expect(page.locator('[data-tour="points"].tour-target')).toBeVisible();          // Explorer: point selection highlighted
+    for (let k = 0; k < 8; k++) await page.keyboard.press("ArrowRight");
+    await expect(dlg).toContainText("You're ready");
+    await expect(dlg).toContainText("Pick a base and a target in Mars Explorer");
+    await dlg.getByRole("button", { name: "Open glossary" }).click();
+    const g = page.getByRole("dialog", { name: "Glossary" });
+    await expect(g).toContainText("MOLA");
+    await g.getByLabel("Search the glossary").fill("monte");
+    await expect(g.locator("dt")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(g).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Mission steps" })).toBeVisible();
+  });
+});
+
+test.describe("Shareable mission link", () => {
+  test("a link reopens the same mission and the address bar follows edits", async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem("redreturn.tour.v1", "done"); } catch { /* ignore */ } });
+    await page.goto("/#b=-4.59,137.44&t=-4.75,137.3&c=crew:3");
+    await expect(page.locator(".stat", { hasText: "Recommended" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".kv")).toContainText("4.590°S 137.440°E");
+    await expect(page.locator(".kv")).toContainText("3 · 4.5 km/h");
+    await gotoTab(page, "terrain");
+    await expect(page.locator(".stat", { hasText: "Window coverage" })).toContainText("Gale");
+    await gotoTab(page, "explorer");
+    await page.getByLabel("Target latitude").fill("-4.8");
+    await expect.poll(() => page.evaluate(() => location.hash)).toContain("t=-4.8%2C137.3");
+  });
+});
+
+test.describe("3D terrain controls", () => {
+  test("buttons and arrow keys move the camera", async ({ page }) => {
+    await openApp(page);
+    await gotoTab(page, "terrain");
+    await page.getByRole("button", { name: "3D mesh" }).click();
+    const stage = page.locator(".mesh-stage");
+    await expect(stage.locator("canvas")).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(1200);
+    const before = await stage.screenshot();
+    await page.getByRole("button", { name: "Rotate left" }).click();
+    await page.getByRole("button", { name: "Zoom in" }).click();
+    await stage.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(800);
+    expect(Buffer.compare(before, await stage.screenshot())).not.toBe(0);
+  });
+});
+
+test.describe("Mars Explorer: any distance", () => {
+  test("far points give a long-range overview (terrain, estimate) and local-only tools explain why", async ({ page }) => {
+    const fixture = fs.readFileSync("e2e/fixtures/long-range-jezero-gale.json", "utf-8");
+    await page.route(/\/api\/routes\/long-range$/, r => r.fulfill({ status: 200, contentType: "application/json", body: fixture }));
+    await openApp(page);
+    await gotoTab(page, "explorer");
+    await page.getByRole("button", { name: "Set Gale Crater (Mount Sharp) as target" }).click();   // ~3,700 km away; nothing is moved
+    await expect(page.locator(".reach.long")).toContainText("long-range route");
+    await expect(page.getByLabel("Base latitude")).toHaveValue("18.38");
+    await gotoTab(page, "terrain");
+    await expect(page.getByText("Long-range overview").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator(".stat", { hasText: "Grid spacing" })).toContainText("8.8 km");
+    await expect(page.locator("canvas[aria-label^='Shaded relief']")).toBeVisible();
+    await gotoTab(page, "planner");
+    await expect(page.getByRole("heading", { name: "Long-range estimate" })).toBeVisible();
+    await expect(page.locator("table.t", { hasText: "Sols" }).locator("tbody tr")).toHaveCount(2);
+    await gotoTab(page, "risk");
+    await expect(page.getByRole("heading", { name: "Risk Lab needs a local excursion" })).toBeVisible();
+  });
+
+  test("the close-up map zooms and places a nearby target precisely", async ({ page }) => {
+    await openApp(page);
+    await gotoTab(page, "explorer");
+    const stage = page.locator(".rm-stage");
+    await expect(stage.locator("img.rm-tile").first()).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Zoom in" }).click();
+    const before = await page.getByLabel("Target latitude").inputValue();
+    const box = (await stage.boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);              // "Target" is the default selection
+    await expect(page.getByLabel("Target latitude")).not.toHaveValue(before);
+    await expect(page.locator(".reach.ok")).toContainText("local excursion");
+    await gotoTab(page, "planner");
+    await expect(page.locator("table.t", { hasText: "Ascent" }).first().locator("tbody tr")).toHaveCount(4, { timeout: 30_000 });
+  });
+});
+
+
+test.describe("3D globe", () => {
+  test("a click on the globe sets the point actually under the cursor (regression: was 90° off in longitude)", async ({ page }) => {
+    await openApp(page);
+    await gotoTab(page, "explorer");
+    await page.locator(".globe").scrollIntoViewIfNeeded();                                  // the globe is created when it comes into view
+    await expect(page.locator(".globe-res")).toBeVisible({ timeout: 60_000 });
+    await page.locator(".win", { hasText: "Jezero" }).getByRole("button", { name: "Show on map" }).click();   // flies the globe over Jezero
+    await page.locator(".globe").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(3500);
+    const box = (await page.locator(".globe canvas").boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect.poll(async () => Number(await page.getByLabel("Target latitude").inputValue())).toBeGreaterThan(15);
+    const lat = Number(await page.getByLabel("Target latitude").inputValue()), lon = Number(await page.getByLabel("Target longitude").inputValue());
+    expect(Math.abs(lat - 18.38)).toBeLessThan(3);
+    expect(Math.abs(lon - 77.58)).toBeLessThan(3);
   });
 });

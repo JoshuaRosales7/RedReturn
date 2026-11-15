@@ -35,8 +35,8 @@ function paint(hf: Heightfield, canvas: HTMLCanvasElement, showSlope: boolean, m
   ctx.putImageData(img, 0, 0);
 }
 
-export function TerrainMap({ hf, routes, show, origin, destination, stops, showSlope, maxSlope, onPick }: {
-  hf: Heightfield; routes: RouteAlt[]; show: string[]; origin: Point; destination: Point; stops: Stop[]; showSlope: boolean; maxSlope: number; onPick?: (p: Point) => void;
+export function TerrainMap({ hf, routes, show, origin, destination, stops, showSlope, maxSlope, onPick, pickLabel = "point" }: {
+  hf: Heightfield; routes: Pick<RouteAlt, "strategy" | "coordinates">[]; show: string[]; origin: Point; destination: Point; stops: Stop[]; showSlope: boolean; maxSlope: number; onPick?: (p: Point) => void; pickLabel?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => { if (ref.current) paint(hf, ref.current, showSlope, maxSlope); }, [hf, showSlope, maxSlope]);
@@ -54,16 +54,19 @@ export function TerrainMap({ hf, routes, show, origin, destination, stops, showS
   return (
     <div className="mapwrap">
       <canvas ref={ref} aria-label="Shaded relief rendered from MOLA elevations" role="img" />
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0, cursor: onPick ? "crosshair" : "default" }} onClick={click} aria-label="Route overlay">
+      {/* Route overlay is decorative for assistive tech: the same routes are listed in the metrics table. Coordinates can be typed in Mars Explorer. */}
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0, cursor: onPick ? "crosshair" : "default" }} onClick={click} aria-hidden="true">
         {paths.map(p => <path key={p.s} d={p.d} fill="none" stroke="#0a0d11" strokeWidth={10} opacity={.6} strokeLinejoin="round" strokeLinecap="round" />)}
         {paths.map(p => <path key={p.s + "c"} d={p.d} fill="none" stroke={STRATEGY_COLOR[p.s]} strokeWidth={5} strokeDasharray={p.s === "shortest" ? "14 9" : undefined} strokeLinejoin="round" strokeLinecap="round" />)}
         {stops.map((s, i) => mark(s, "#b48ead", `S${i + 1}`))}
         {mark(origin, "#62b8a4", "BASE")}{mark(destination, "#e8794a", "TARGET")}
       </svg>
       <div className="map-north" aria-hidden>N<span>↑</span></div>
+      {onPick && <div className="map-pick" aria-hidden>Click to place the {pickLabel}</div>}
+      {hf.elevation_m.some(v => v === null) && <div className="map-nodata"><i />No data (never filled)</div>}
       <div className="mapbar">
         <div className="cbar"><span className="num tiny">{rng ? `${Math.round(rng.lo)} m` : "—"}</span><i style={{ background: RELIEF_GRADIENT }} /><span className="num tiny">{rng ? `${Math.round(rng.hi)} m` : "—"}</span></div>
-        <span className="tiny muted">NASA MGS MOLA 463 m DEM · ≈ {widthKm.toFixed(0)} km across · {hf.display_pixel_m.toFixed(0)} m cells · smoothed ×{Math.max(1, Math.min(6, Math.floor(720 / hf.cols)))} for display only; shading is a rendering, not data</span>
+        <span className="tiny muted">{hf.display_pixel_m > 5000 ? `NASA MGS MOLA DEM, long-range overview grid (source ${Math.round(hf.source_pixel_m)} m)` : "NASA MGS MOLA 463 m DEM"} · ≈ {widthKm.toFixed(0)} km across · {hf.display_pixel_m > 5000 ? `${(hf.display_pixel_m / 1000).toFixed(1)} km` : `${hf.display_pixel_m.toFixed(0)} m`} cells · smoothed ×{Math.max(1, Math.min(6, Math.floor(720 / hf.cols)))} for display only; shading is a rendering, not data</span>
       </div>
     </div>
   );

@@ -16,3 +16,6 @@ docs/qa/
 tsconfig.tsbuildinfo
 test-results/
 playwright-report/
+
+# MOLA windows downloaded on demand by the API (reproducible from the sidecar provenance)
+api/data/dem/ondemand/

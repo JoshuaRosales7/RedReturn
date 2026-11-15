@@ -20,6 +20,8 @@ Educational research prototype. **Not operational guidance; never certifies a ro
 | ARES | Questions answered **from the calculations** (provenance badge, tools used, uncertainty). Optional LLM paraphrase is off by default. |
 | Reports | PDF, JSON (with reproducibility hashes), GeoJSON; data sources by class A–E; challenge alignment. |
 
+First visit opens a plain-language guided tour (replay with **?**); a **Glossary** explains every term; the Overview shows mission progress step by step. The address bar always holds the current mission (base, target, stops, changed settings) — **Copy mission link** shares or bookmarks it. If the API is unreachable, only the Jezero demo is shown, from a labelled precomputed snapshot.
+
 ## Quick start
 ```bash
 # API (Python 3.12)
@@ -42,7 +44,18 @@ npm run build
 Results actually recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Real data
-`api/data/dem/*.tif` are windows of the **USGS/NASA MGS MOLA 463 m DEM** (int16 metres above the MOLA areoid, nodata preserved) for Jezero and Gale, ~1 MB each with SHA-256 and source ETag. Rebuild with `scripts/build_mola_windows.py`. Colour tiles are display-only and never converted to numbers. See [docs/DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md).
+`api/data/dem/*.tif` are windows of the **USGS/NASA MGS MOLA 463 m DEM** (int16 metres above the MOLA areoid, nodata preserved) for Jezero and Gale, ~1 MB each with SHA-256 and source ETag. Rebuild with `scripts/build_mola_windows.py`. Colour tiles are display-only and never converted to numbers.
+
+**Anywhere else on Mars:** when base and target are outside those windows, the API downloads the real MOLA window around the route on demand (`api/datasets/mola_remote.py`). The global mosaic is an uncompressed int16 strip TIFF, so only the needed bytes of each row are fetched with HTTP range requests (typically 5–60 s, once per area); the TIFF layout is verified first and values are stored untouched with the same provenance sidecar (`"on_demand": true`). Requires internet access from the API host. Settings:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `REDRETURN_DEM_ON_DEMAND` | `1` | `0` disables downloads (only the shipped windows are used) |
+| `REDRETURN_DEM_CACHE_DIR` | `api/data/dem/ondemand` | where downloaded areas are stored (git-ignored) |
+| `REDRETURN_DEM_CACHE_MAX` | `40` | stored areas kept; the oldest are evicted |
+| `REDRETURN_DEM_DOWNLOADS_PER_MIN` | `6` | new-area downloads per minute (HTTP 429 beyond) |
+
+**Local vs long-range:** base and target within 3° of latitude and longitude (≈150–180 km) get the full local analysis on the 463 m grid. Farther apart, `POST /api/routes/long-range` reads every *f*-th MOLA row and column (exact source values, never averaged; *f* chosen so the grid stays ≤ `REDRETURN_LONG_RANGE_MAX_CELLS`, default 150 000) and plans a straight and a terrain-aware **overview** route; the Planner shows travel time, sols and supplies as labelled class-C estimates. At kilometre spacing slopes and obstacles are invisible, so long-range routes are for orientation only — Risk Lab, Emergency and ARES require a local excursion. Routes across the 180° meridian are not supported yet. See [docs/DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md).
 
 ## Scientific rules enforced
 Visual texture is not elevation · nodata stays missing · interpolated values are flagged · a 463 m DEM cannot see hazards under ~1 km · Monte Carlo output is **not** a survival probability · terrain-evaluated ≠ safe · no route is ever certified. Details: [docs/SCIENTIFIC_VALIDATION.md](docs/SCIENTIFIC_VALIDATION.md).
@@ -58,7 +71,7 @@ Static web: any static host (`out/`). API: `api/Dockerfile` or `render.yaml`; se
 [AUDIT_2026](docs/AUDIT_2026.md) · [CHALLENGE_ALIGNMENT](docs/CHALLENGE_ALIGNMENT.md) · [DATA_PROVENANCE](docs/DATA_PROVENANCE.md) · [SCIENTIFIC_VALIDATION](docs/SCIENTIFIC_VALIDATION.md) · [ARCHITECTURE](docs/ARCHITECTURE.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [JUDGING_EVIDENCE](docs/JUDGING_EVIDENCE.md) · [GLOBAL_OFFERS](docs/GLOBAL_OFFERS.md) · [VERIFICATION](docs/VERIFICATION.md) · [VALIDATION_RESULTS](docs/VALIDATION_RESULTS.md) · [RELEASE_READINESS](docs/RELEASE_READINESS.md) · [COMPLIANCE](docs/COMPLIANCE.md) · [SUBMISSION_PACK](docs/SUBMISSION_PACK.md) · [REFERENCES](docs/REFERENCES.md) · [SI_USE](docs/SI_USE.md) · [FINAL_REPORT](docs/FINAL_REPORT.md)
 
 ## Known limitations
-No rock/boulder or soil data; 463 m terrain only; two cached regions (Jezero, Gale); constant-rate resource model; optional LLM layer untested; no public deployment yet; pre-existing-code eligibility is unresolved ([COMPLIANCE](docs/COMPLIANCE.md)).
+No rock/boulder or soil data; 463 m terrain only; other regions need internet access from the API for a one-time MOLA download; constant-rate resource model; optional LLM layer untested; no public deployment yet; pre-existing-code eligibility is unresolved ([COMPLIANCE](docs/COMPLIANCE.md)).
 
 ## SI-assisted development
 This repository was built with AI coding assistants (earlier commits: "Codex"; hackathon-day work: Claude via Claude Code). See [docs/SI_USE.md](docs/SI_USE.md). All numerical results come from deterministic code.

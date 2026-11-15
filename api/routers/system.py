@@ -67,4 +67,4 @@ def demo():
     """Canonical reproducible demonstration scenario (inputs only; call the other endpoints to compute)."""
     import json
     from pathlib import Path
-    return json.loads((Path(__file__).resolve().parent.parent / "data" / "demo_scenario.json").read_text())
+    return json.loads((Path(__file__).resolve().parent.parent / "data" / "demo_scenario.json").read_text(encoding="utf-8"))

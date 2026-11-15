@@ -127,7 +127,7 @@ def test_golden_vectors_match_engine():
     from api.models.schemas import MissionConfig
     from api.scientific.geodesy import haversine_km
     from api.scientific.mission import RouteSummary, evaluate
-    g = json.loads((Path(__file__).resolve().parents[2] / "tests" / "golden" / "mission_vectors.json").read_text())
+    g = json.loads((Path(__file__).resolve().parents[2] / "tests" / "golden" / "mission_vectors.json").read_text(encoding="utf-8"))
     for name, case in g["mission"].items():
         r = evaluate(RouteSummary(**case["route"]), MissionConfig(**case["config"]))
         for k, v in case["expected"].items():
@@ -159,3 +159,15 @@ def test_rate_limited_and_oversized_responses_carry_cors_headers(monkeypatch):
     monkeypatch.setattr(limits, "MAX_BODY_BYTES", 10)
     big = client.post("/api/terrain/profile", json={"points": [BODY["origin"], BODY["destination"]]}, headers=hdr)
     assert big.status_code == 413 and big.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_json_report_honours_selected_route_and_all_incidents():
+    incidents = [{"kind": "battery_loss", "magnitude": 35}, {"kind": "speed_reduction", "magnitude": 30}]
+    r = client.post("/api/reports/json", json={**BODY, "runs": 200, "strategy": "terrain", "incidents": incidents, "incident_progress": 0.6}).json()
+    assert r["analysed_strategy"] == "terrain"
+    assert r["certification"] == "NOT_CERTIFIABLE"
+    assert len(r["scenario"]["incident"]["applied"]) == 2
+    # without a strategy the report keeps analysing the recommended route (backward compatible)
+    d = client.post("/api/reports/json", json={**BODY, "runs": 200}).json()
+    assert d["analysed_strategy"] == d["recommended_strategy"]
+    assert d["scenario"] is None

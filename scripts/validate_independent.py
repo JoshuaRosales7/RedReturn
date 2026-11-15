@@ -92,8 +92,8 @@ def slerp(a, b, n):
 
 
 # ---------- inputs --------------------------------------------------------------------------
-demo = json.loads((ROOT / "api/data/demo_scenario.json").read_text())
-snap = json.loads((ROOT / "public/data/demo-snapshot.json").read_text())
+demo = json.loads((ROOT / "api/data/demo_scenario.json").read_text(encoding="utf-8"))
+snap = json.loads((ROOT / "public/data/demo-snapshot.json").read_text(encoding="utf-8"))
 A = (demo["origin"]["lat"], demo["origin"]["lon"])
 B = (demo["destination"]["lat"], demo["destination"]["lon"])
 CFG = dict(crew=2, speed=4.5, o2=18.0, o2r=0.084, kwh=45.0, kwhh=1.2, water=12.0, wr=2.5, rad=0.025, radmax=1.0, reserve=.20, hmax=18.0,

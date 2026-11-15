@@ -3,9 +3,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from functools import lru_cache
 
+import numpy as np
+
 from ..errors import ApiError
+from ..datasets import mola_remote
 from ..scientific import dem
 from ..scientific.mission import RouteSummary, evaluate
 from ..scientific.routing import Mobility, optimised_route, shortest_route
@@ -18,8 +22,25 @@ LIMITATIONS = [
 ]
 
 
-def require_tile(points: list[tuple[float, float]]) -> dem.DemTile:
+_REMOTE_STATUS = {"download_rate_limited": 429, "grid_too_large": 422, "crosses_antimeridian": 422, "nodata": 422, "dem_download_failed": 502, "dem_source_changed": 502}
+
+
+def require_tile(points: list[tuple[float, float]], extra: list[tuple[float, float]] | None = None) -> dem.DemTile:
+    """Cached MOLA window containing all points; outside them, download the real MOLA window on demand (never fabricate)."""
     tile = dem.tile_for_points(points)
+    if tile is None and mola_remote.enabled():
+        try:
+            sidecar = mola_remote.fetch_window(points + (extra or []))
+            tile = dem.add_tile(sidecar)
+            evicted = mola_remote.evict(keep=sidecar)
+            for wid in evicted:
+                dem.remove_tile(wid)
+            if evicted:
+                plan_cached.cache_clear()
+        except mola_remote.RemoteDemError as e:
+            raise ApiError(_REMOTE_STATUS.get(e.code, 502), e.code, e.message, e.details) from e
+        if not all(tile.contains(*p) for p in points):
+            tile = None
     if tile is None:
         raise ApiError(422, "outside_dem_coverage",
                        "Origin and destination must both lie inside one cached MOLA window.",
@@ -64,7 +85,7 @@ def science_value(route: dict, stops: list[dict]) -> float:
 
 def alternatives(origin, dest, cfg, stops, strategies) -> dict:
     a, b = (origin.lat, origin.lon), (dest.lat, dest.lon)
-    tile = require_tile([a, b])
+    tile = require_tile([a, b], [(s.lat, s.lon) for s in stops])
     mob = Mobility.from_config(cfg)
     skey = stops_key(stops)
     out = []
@@ -126,3 +147,53 @@ def compare(routes: list[dict]) -> list[dict]:
 def request_hash(model) -> str:
     from ..scientific.risk import canon
     return hashlib.sha256(json.dumps(canon(model.model_dump()), sort_keys=True).encode()).hexdigest()[:16]
+
+
+# --- long-range (strategic) planning ---------------------------------------------------------------------------------
+LONG_RANGE_LIMITATIONS = [
+    "Strategic overview: elevations are real MOLA values sampled every few kilometres (see grid spacing), not the full 463 m grid.",
+    "At this spacing slopes are smoothed out: steep crater walls, scarps and every obstacle smaller than the spacing are invisible.",
+    "Travel time, sols and consumables are estimates from editable assumptions; multi-sol operations (recharging, night, rest, resupply) are not modelled.",
+    "Not a route a crew could follow. Plan each leg locally (≤ ~150 km) for terrain-evaluated detail. Nothing here is certified.",
+]
+
+
+def _pooled(z: np.ndarray, s: np.ndarray, max_size: int = 160) -> tuple[np.ndarray, np.ndarray, int]:
+    f = max(1, math.ceil(max(z.shape) / max_size))
+    if f == 1:
+        return z, s, 1
+    h, w = (z.shape[0] // f) * f, (z.shape[1] // f) * f
+    zz = z[:h, :w].reshape(h // f, f, w // f, f).mean(axis=(1, 3))          # NaN propagates: any nodata keeps the cell missing
+    with np.errstate(all="ignore"):
+        ss = np.nanmean(s[:h, :w].reshape(h // f, f, w // f, f), axis=(1, 3))
+    return zz, ss, f
+
+
+def long_range(origin, dest, cfg) -> dict:
+    a, b = (origin.lat, origin.lon), (dest.lat, dest.lon)
+    try:
+        g = mola_remote.fetch_coarse([a, b])
+    except mola_remote.RemoteDemError as e:
+        raise ApiError(_REMOTE_STATUS.get(e.code, 502), e.code, e.message, e.details) from e
+    tile = dem.DemTile(meta={"id": f"coarse_{g['bounds_px']['row_off']}_{g['bounds_px']['col_off']}_{g['factor']}", "name": "MOLA long-range grid"},
+                       z=g["z"], lon_left=g["lon_left"], lat_top=g["lat_top"], dlon=g["dlon"], dlat=g["dlat"])
+    mob = Mobility.from_config(cfg)
+    routes = [public(shortest_route(tile, a, b, mob)), public(optimised_route(tile, "terrain", a, b, mob))]
+    zz, ss, pf = _pooled(tile.z, tile.slope_deg)
+    h, w = zz.shape
+    cell = lambda v: None if np.isnan(v) else round(float(v), 1)  # noqa: E731
+    valid = ~np.isnan(tile.z)
+    return {
+        "mode": "long_range",
+        "grid": {"spacing_m": tile.pixel_m, "factor": g["factor"], "source_pixel_m": g["source_pixel_m"], "rows": tile.rows, "cols": tile.cols,
+                 "bounds": {"lat_min": tile.lat_bottom, "lat_max": tile.lat_top, "lon_min": tile.lon_left, "lon_max": tile.lon_right},
+                 "valid_fraction": float(valid.mean()), "sampling": f"every {g['factor']}th MOLA cell in each direction (exact values, not averaged)",
+                 "source": g["source"]},
+        "routes": routes,
+        "heightfield": {"tile_id": tile.id, "rows": h, "cols": w,
+                        "bounds": {"lat_max": tile.lat_top, "lat_min": tile.lat_top - h * pf * tile.dlat, "lon_min": tile.lon_left, "lon_max": tile.lon_left + w * pf * tile.dlon},
+                        "source_pixel_m": g["source_pixel_m"], "display_pixel_m": tile.pixel_m * pf,
+                        "elevation_m": [cell(v) for v in zz.ravel()], "slope_deg": [cell(v) for v in ss.ravel()],
+                        "notes": ["Display product of the long-range grid (block mean for display only)."]},
+        "limitations": LONG_RANGE_LIMITATIONS, "certification": "NOT_CERTIFIABLE",
+    }

@@ -96,6 +96,12 @@ export function coordinateToVector(point: Coordinate, radius = 2.02): [number, n
   return [-radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
 }
 
+/** Inverse of coordinateToVector (any radius): globe-local point → planetocentric lat, east-positive lon. */
+export function vectorToCoordinate(x: number, y: number, z: number): Coordinate {
+  const r = Math.hypot(x, y, z) || 1;
+  return { lat: 90 - deg(Math.acos(Math.max(-1, Math.min(1, y / r)))), lon: normalizeLon(deg(Math.atan2(z, -x)) - 180) };
+}
+
 export const DEFAULT_CONFIG: MissionConfig = {
   crew: 2, speedKmh: 4.5, oxygenKg: 18, oxygenKgPerPersonHour: 0.084,
   energyKwh: 45, energyKwhPerHour: 1.2, waterLiters: 12, waterLitersPerPersonDay: 2.5,

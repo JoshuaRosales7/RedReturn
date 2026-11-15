@@ -30,7 +30,7 @@ test.describe("Accessibility (axe, WCAG 2 A/AA)", () => {
     await expect(page.getByRole("heading", { name: "Route alternatives" })).toBeVisible();
   });
   test("reduced motion is honoured", async ({ browser }) => {
-    const ctx = await browser.newContext({ reducedMotion: "reduce", baseURL: "http://localhost:3000" });
+    const ctx = await browser.newContext({ reducedMotion: "reduce", baseURL: process.env.E2E_BASE_URL || "http://localhost:3000" });
     const page = await ctx.newPage();
     await openApp(page);
     const anim = await page.evaluate(() => { const e = document.createElement("span"); e.className = "spin"; document.body.appendChild(e); const n = getComputedStyle(e).animationName; e.remove(); return n; });

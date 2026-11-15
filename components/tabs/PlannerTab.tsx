@@ -1,15 +1,18 @@
 "use client";
 import { Plus, Route as RouteIcon, Trash2 } from "lucide-react";
-import { useMissionStore } from "@/lib/store";
-import { fmt, FACTOR_LABEL, STRATEGY_COLOR, STRATEGY_LABEL, hours } from "@/lib/format";
-import { Badge, ErrorState, Loading, NumField, Notice, PageHead, Panel, Range } from "../ui";
+import { useMissionStore, workingStrategy } from "@/lib/store";
+import { fmt, factor, STRATEGY_COLOR, STRATEGY_LABEL, hours } from "@/lib/format";
+import { Badge, Loading, NextStep, NumField, Notice, PageHead, Panel, Range, SourceBadge } from "../ui";
+import { PlanStatus } from "../PlanStatus";
+import { LongRangePlanner } from "../LongRange";
 import { CompareBars } from "../charts";
 
 export function PlannerTab() {
   const s = useMissionStore(); const c = s.config; const alt = s.alternatives;
+  const working = workingStrategy(s); const picked = !!alt && working !== alt.recommended;
   return (
     <div className="stack" style={{ gap: 12 }}>
-    <PageHead icon={RouteIcon} title="Planner">Set the crew, rover, consumables, reserves and science stops on the left; the four route strategies re-plan live on the right.</PageHead>
+    <PageHead icon={RouteIcon} title="Planner" right={<SourceBadge source={s.sources.alternatives} />}>{s.longRange && !alt ? "Set the crew, rover and supplies on the left; the long-range estimate on the right updates with them." : "Set the crew, rover, consumables, reserves and science stops on the left; the four route strategies re-plan automatically on the right. Pick the route to analyse in Risk Lab and Emergency."}</PageHead>
     <div className="dash">
       <div className="col c4">
         <Panel title="Crew & rover"><div className="grid g2">
@@ -38,25 +41,28 @@ export function PlannerTab() {
         <Panel title="Science stops" right={<button className="btn sm" disabled={s.stops.length >= 5} onClick={() => s.setStops([...s.stops, { name: `Stop ${s.stops.length + 1}`, lat: +((s.origin.lat + s.destination.lat) / 2).toFixed(3), lon: +((s.origin.lon + s.destination.lon) / 2).toFixed(3), dwell_hours: 0.75, weight: 1 }])}><Plus size={13} />Add</button>}>
           {s.stops.length === 0 && <p className="tiny muted">None. Without declared stops the science-prioritised strategy is disabled (no science-value dataset exists to rank terrain).</p>}
           {s.stops.map((st, i) => <div key={i} className="grid g3" style={{ marginBottom: 8, alignItems: "end" }}>
-            <NumField label="Lat" value={st.lat} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lat: v } : x)))} /><NumField label="Lon" value={st.lon} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lon: v } : x)))} />
+            <NumField label={`Stop ${i + 1} lat`} value={st.lat} min={-90} max={90} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lat: v } : x)))} /><NumField label={`Stop ${i + 1} lon`} value={st.lon} min={-180} max={180} step={0.01} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, lon: v } : x)))} />
             <div className="row" style={{ flexWrap: "nowrap" }}><NumField label="Dwell h" value={st.dwell_hours} min={0} max={100} step={0.25} onChange={v => s.setStops(s.stops.map((x, j) => (j === i ? { ...x, dwell_hours: v } : x)))} /><button className="btn sm" aria-label={`Remove stop ${i + 1}`} onClick={() => s.setStops(s.stops.filter((_, j) => j !== i))}><Trash2 size={13} /></button></div>
           </div>)}
         </Panel>
       </div>
       <div className="col c8">
-        {s.busy.alt && <Loading label="Re-planning routes on the DEM…" />}
-        {s.errors.alternatives && !alt && <ErrorState message={s.errors.alternatives} retry={() => void s.refreshAlternatives()} />}
+        {!alt && s.longRange && <LongRangePlanner lr={s.longRange} />}
+        {!alt && !s.longRange && <Panel title="Route alternatives" tour="routes"><PlanStatus what="route plan" /></Panel>}
+        {alt && s.busy.alt && <Loading label="Re-planning routes on the DEM…" />}
         {alt && <>
-          <Panel title="Route alternatives" right={alt.recommended ? <Badge tone="ok">Recommended: {STRATEGY_LABEL[alt.recommended]}</Badge> : <Badge tone="bad">No route meets all constraints</Badge>}>
-            <div className="tscroll"><table className="t"><thead><tr><th></th><th>Route</th><th>km</th><th>Time</th><th>Ascent</th><th>Max°</th><th>Energy</th><th>Limit</th><th>Status</th></tr></thead><tbody>
-              {alt.routes.map(r => { const m = r.mission; const sel = s.strategy === r.strategy; return (
+          <Panel title="Route alternatives" tour="routes" right={alt.recommended ? <Badge tone="ok" title="Best modelled margin among routes meeting every modelled constraint. Not a safety rating.">Recommended: {STRATEGY_LABEL[alt.recommended]}</Badge> : <Badge tone="bad">No route meets all constraints</Badge>}>
+            <div className="row between small" style={{ marginBottom: 8 }}><span className="muted">Working plan (used by Risk Lab, Emergency, ARES, Reports): <b style={{ color: STRATEGY_COLOR[working] }}>{STRATEGY_LABEL[working]}</b>{picked ? " — your selection" : alt.recommended ? " — recommended" : ""}</span>{picked && alt.recommended && <button className="btn sm" onClick={() => s.setStrategy(null)}>Use recommended route</button>}</div>
+            {picked && alt.routes.find(r => r.strategy === working)?.constraints_violated.length ? <Notice>The selected route violates modelled constraints; downstream analyses will show how it fails, not make it acceptable.</Notice> : null}
+            <div className="tscroll"><table className="t"><thead><tr><th scope="col"><span className="sr">Working plan</span></th><th scope="col">Route</th><th>km</th><th>Time</th><th>Ascent</th><th>Max°</th><th>Energy</th><th>Limit</th><th>Status</th></tr></thead><tbody>
+              {alt.routes.map(r => { const m = r.mission; const sel = working === r.strategy; return (
                 <tr key={r.strategy} className={sel ? "sel" : ""}>
-                  <td><input type="radio" name="strategy" aria-label={`Use ${STRATEGY_LABEL[r.strategy]}`} checked={sel} onChange={() => s.setStrategy(r.strategy)} /></td>
+                  <td><input type="radio" name="strategy" aria-label={`Use ${STRATEGY_LABEL[r.strategy]} as working plan`} checked={sel} onChange={() => s.setStrategy(r.strategy === alt.recommended ? null : r.strategy)} /></td>
                   <td style={{ color: STRATEGY_COLOR[r.strategy] }}><b>{STRATEGY_LABEL[r.strategy]}</b>{r.status === "downgraded" && <div><Badge tone="warn">downgraded</Badge></div>}</td>
                   <td className="n">{fmt(r.metrics.distance_km)}</td><td className="n">{hours(m.duration_hours)}</td><td className="n">{fmt(r.metrics.elevation_gain_m, 0)} m</td>
                   <td className="n" style={(r.metrics.max_slope_deg ?? 0) > c.maxSlopeDeg ? { color: "var(--bad)" } : undefined}>{fmt(r.metrics.max_slope_deg)}</td><td className="n">{fmt(m.energy_used_kwh)} kWh</td>
-                  <td className="n">{FACTOR_LABEL[m.limiting_factor]} {fmt(m.limiting_margin_percent)}%</td>
-                  <td>{r.constraints_violated.length ? r.constraints_violated.map(v => <Badge key={v.id} tone="bad">{v.id.replace("_", " ")}</Badge>) : m.feasible_within_model ? <Badge tone="ok">feasible in model</Badge> : <Badge tone="bad">fails {FACTOR_LABEL[m.limiting_factor].toLowerCase()}</Badge>}</td>
+                  <td className="n">{factor(m.limiting_factor)} {fmt(m.limiting_margin_percent)}%</td>
+                  <td>{r.constraints_violated.length ? r.constraints_violated.map(v => <Badge key={v.id} tone="bad">{v.id.replace("_", " ")}</Badge>) : m.feasible_within_model ? <Badge tone="ok">feasible in model</Badge> : <Badge tone="bad">fails {factor(m.limiting_factor).toLowerCase()}</Badge>}</td>
                 </tr>); })}
             </tbody></table></div>
             <p className="small" style={{ marginTop: 10 }}><b>Why:</b> {alt.reason}</p>
@@ -66,7 +72,8 @@ export function PlannerTab() {
             <Panel title="Why they differ"><CompareBars rows={alt.comparison} strategies={alt.routes.map(r => r.strategy)} /></Panel>
             <Panel title="Objective of each strategy"><div className="stack">{alt.routes.map(r => <div key={r.strategy}><b className="small" style={{ color: STRATEGY_COLOR[r.strategy] }}>{STRATEGY_LABEL[r.strategy]}</b><div className="tiny muted">{r.objective}</div><div className="tiny dim num">{Object.entries(r.cost_components).map(([k, v]) => `${k.replace(/_/g, " ")}: ${fmt(v, 2)}`).join(" · ")}</div></div>)}</div></Panel>
           </div>
-          <Notice tone="info">Routes use cell-centre elevations of a 463 m grid; infeasible = blocked, never extrapolated. Resource figures are model outputs under your assumptions, not forecasts.</Notice>
+          <Notice tone="info">Routes use cell-centre elevations of a {fmt(alt.resolution.pixel_size_m, 0)} m grid; infeasible = blocked, never extrapolated. Resource figures are model outputs under your assumptions, not forecasts. “Feasible in model” is not “safe”.</Notice>
+          <NextStep detail="Next: see how much the decision depends on uncertain inputs." label="Quantify uncertainty in Risk Lab" onClick={() => s.setTab("risk")} />
         </>}
       </div>
     </div>

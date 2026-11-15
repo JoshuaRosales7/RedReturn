@@ -95,13 +95,14 @@ def report_geojson(req: ReportRequest):
 @router.post("/api/reports/json")
 def report_json(req: ReportRequest):
     alt = planning.alternatives(req.origin, req.destination, req.config, req.science_stops, ["shortest", "terrain", "resource", "science"])
-    strategy = alt["recommended"] or "terrain"
+    strategy = req.strategy or alt["recommended"] or "terrain"
     tile, raw, cfg = _planned(req.origin, req.destination, strategy, req.config, req.science_stops)
     rk = risk.analyze(planning.summary_of(raw), cfg, runs=req.runs, seed=req.seed, science_hours=cfg.science_hours,
                       request_payload={"report": req.model_dump(), "strategy": strategy})
     scenario = None
-    if req.incident is not None:
-        scenario = emergency.simulate(tile, raw, cfg, Mobility.from_config(cfg), strategy, [req.incident], req.incident_progress,
+    incidents = req.incidents or ([req.incident] if req.incident is not None else [])
+    if incidents:
+        scenario = emergency.simulate(tile, raw, cfg, Mobility.from_config(cfg), strategy, incidents, req.incident_progress,
                                       base=(req.origin.lat, req.origin.lon), dest=(req.destination.lat, req.destination.lon), science_hours=cfg.science_hours)
     meta = {}
     for t in dem.all_tiles().values():
@@ -110,6 +111,6 @@ def report_json(req: ReportRequest):
         "report": "RedReturn mission decision report", "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "reproducibility": {"request": req.model_dump(), "request_sha256": planning.request_hash(req), "seed": req.seed, "risk_result_sha256": rk["result_sha256"],
                             "engine": rk["engine"], "dem_windows": meta, "note": "Re-posting `request` to the same API version reproduces every number except generated_at_utc."},
-        "alternatives": alt, "recommended_strategy": alt["recommended"], "risk": rk, "scenario": scenario,
+        "alternatives": alt, "recommended_strategy": alt["recommended"], "analysed_strategy": strategy, "risk": rk, "scenario": scenario,
         "data_sources": registry.provenance(), "limitations": planning.LIMITATIONS, "certification": "NOT_CERTIFIABLE",
     }

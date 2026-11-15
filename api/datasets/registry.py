@@ -81,8 +81,8 @@ def provenance() -> dict:
 
 def status() -> dict:
     tiles = []
-    for p in sorted(dem.DEM_DIR.glob("mola_*.json")):
-        meta = json.loads(p.read_text())
+    for p in dem.sidecars():
+        meta = json.loads(p.read_text(encoding="utf-8"))
         tif = p.with_name(meta["file"])
         ok = tif.exists() and hashlib.sha256(tif.read_bytes()).hexdigest() == meta["sha256"]
         tiles.append({"id": meta["id"], "name": meta["name"], "file": meta["file"], "checksum_ok": ok,
