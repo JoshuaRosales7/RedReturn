@@ -1,13 +1,16 @@
-export const MARS_RADIUS_KM = 3389.5;
+/** Mars 2000 sphere used by the MOLA MEGDR grids (same constant as api/scientific/geodesy.py). */
+export const MARS_RADIUS_KM = 3396.19;
 
 export type Coordinate = { lat: number; lon: number; name?: string };
 export type Strategy = "direct" | "conservative" | "science" | "limited";
+export type RouteStrategy = "shortest" | "terrain" | "resource" | "science";
 export type MissionConfig = {
   crew: number; speedKmh: number; oxygenKg: number; oxygenKgPerPersonHour: number;
   energyKwh: number; energyKwhPerHour: number; reservePercent: number;
   waterLiters: number; waterLitersPerPersonDay: number;
   radiationMsvPerHour: number; maxRadiationMsv: number;
   maxHours: number; scienceHours: number; contingencyPercent: number; returnRequired: boolean;
+  maxSlopeDeg: number; roverMassKg: number; drivetrainEfficiency: number;
 };
 
 const rad = (value: number) => value * Math.PI / 180;
@@ -46,56 +49,46 @@ export function initialBearing(a: Coordinate, b: Coordinate): number {
   return (deg(Math.atan2(y, x)) + 360) % 360;
 }
 
-export function buildRoute(base: Coordinate, destination: Coordinate, strategy: Strategy): Coordinate[] {
-  if (strategy === "direct" || strategy === "limited") return interpolateGreatCircle(base, destination);
-  const mid = interpolateGreatCircle(base, destination, 2)[1];
-  const offset = strategy === "conservative" ? 2.2 : -3.1;
-  const waypoint = { lat: Math.max(-88, Math.min(88, mid.lat + offset)), lon: normalizeLon(mid.lon + offset * 1.4) };
-  return [...interpolateGreatCircle(base, waypoint, 32).slice(0, -1), ...interpolateGreatCircle(waypoint, destination, 32)];
-}
+export type RouteSummary = { oneWayKm: number; effectiveKm: number; ascentOutM: number; ascentBackM: number; terrainEvaluated: boolean };
+export const G_MARS = 3.71;
+export const flatSummary = (oneWayKm: number): RouteSummary => ({ oneWayKm, effectiveKm: oneWayKm, ascentOutM: 0, ascentBackM: 0, terrainEvaluated: false });
 
-export function evaluateMission(oneWay: Coordinate[], config: MissionConfig) {
-  const oneWayKm = routeDistance(oneWay);
-  const distanceKm = oneWayKm * (config.returnRequired ? 2 : 1);
-  const travelHours = distanceKm / Math.max(0.1, config.speedKmh);
+/** Mirror of api/scientific/mission.py::project_mission for a full mission from base. Verified by tests/parity.test.ts. */
+export function evaluateSummary(route: RouteSummary, config: MissionConfig) {
+  const legs = config.returnRequired ? 2 : 1;
+  const distanceKm = route.oneWayKm * legs;
+  const travelHours = route.effectiveKm * legs / Math.max(0.1, config.speedKmh);
   const durationHours = travelHours + config.scienceHours;
-  const contingency = 1 + config.contingencyPercent / 100;
-  const oxygenUsedKg = durationHours * config.crew * config.oxygenKgPerPersonHour * contingency;
-  const energyUsedKwh = durationHours * config.energyKwhPerHour * contingency;
-  const waterUsedLiters = durationHours / 24 * config.crew * config.waterLitersPerPersonDay * contingency;
+  const factor = 1 + config.contingencyPercent / 100;
+  const ascentM = route.ascentOutM + (config.returnRequired ? route.ascentBackM : 0);
+  const climbKwh = config.roverMassKg * G_MARS * ascentM / Math.max(config.drivetrainEfficiency, 1e-3) / 3.6e6;
+  const oxygenUsedKg = durationHours * config.crew * config.oxygenKgPerPersonHour * factor;
+  const energyUsedKwh = (durationHours * config.energyKwhPerHour + climbKwh) * factor;
+  const waterUsedLiters = durationHours / 24 * config.crew * config.waterLitersPerPersonDay * factor;
   const radiationMsv = durationHours * config.radiationMsvPerHour;
   const oxygenRemaining = config.oxygenKg - oxygenUsedKg;
   const energyRemaining = config.energyKwh - energyUsedKwh;
   const waterRemaining = config.waterLiters - waterUsedLiters;
-  const oxygenReserve = config.oxygenKg * config.reservePercent / 100;
-  const energyReserve = config.energyKwh * config.reservePercent / 100;
-  const waterReserve = config.waterLiters * config.reservePercent / 100;
-  const constraints = {
-    oxygen: oxygenRemaining >= oxygenReserve,
-    energy: energyRemaining >= energyReserve,
-    water: waterRemaining >= waterReserve,
-    radiation: radiationMsv <= config.maxRadiationMsv,
-    time: durationHours <= config.maxHours,
+  const reserve = config.reservePercent / 100;
+  const norm = (rem: number, cap: number) => cap > 0 ? (rem - cap * reserve) / cap : -1;
+  const margins = {
+    oxygen: norm(oxygenRemaining, config.oxygenKg), energy: norm(energyRemaining, config.energyKwh), water: norm(waterRemaining, config.waterLiters),
+    time: (config.maxHours - durationHours) / config.maxHours, radiation: (config.maxRadiationMsv - radiationMsv) / config.maxRadiationMsv,
   };
+  const constraints = {
+    oxygen: oxygenRemaining >= config.oxygenKg * reserve, energy: energyRemaining >= config.energyKwh * reserve,
+    water: waterRemaining >= config.waterLiters * reserve, radiation: radiationMsv <= config.maxRadiationMsv, time: durationHours <= config.maxHours,
+  };
+  const limitingFactor = (Object.keys(margins) as (keyof typeof margins)[]).reduce((a, b) => margins[b] < margins[a] ? b : a);
   const feasible = Object.values(constraints).every(Boolean);
-  const margins = [
-    config.oxygenKg ? (oxygenRemaining - oxygenReserve) / config.oxygenKg : -1,
-    config.energyKwh ? (energyRemaining - energyReserve) / config.energyKwh : -1,
-    config.waterLiters ? (waterRemaining - waterReserve) / config.waterLiters : -1,
-    (config.maxHours - durationHours) / config.maxHours,
-    (config.maxRadiationMsv - radiationMsv) / config.maxRadiationMsv,
-  ];
-  const limitingMarginPercent = Math.min(...margins) * 100;
-  const reasons = [
-    !constraints.oxygen && "El oxígeno cae por debajo de la reserva configurada.",
-    !constraints.energy && "La energía cae por debajo de la reserva configurada.",
-    !constraints.water && "El agua cae por debajo de la reserva configurada.",
-    !constraints.radiation && "La exposición estimada supera el límite configurado.",
-    !constraints.time && "La duración supera el límite configurado.",
-    feasible && "Todas las restricciones de recursos se cumplen dentro del modelo.",
-    "La seguridad del terreno no está certificada: no hay un perfil DEM conectado."
-  ].filter(Boolean) as string[];
-  return { oneWayKm, distanceKm, travelHours, durationHours, oxygenUsedKg, energyUsedKwh, waterUsedLiters, radiationMsv, oxygenRemaining, energyRemaining, waterRemaining, limitingMarginPercent, feasible, constraints, reasons };
+  return { distanceKm, travelHours, durationHours, oxygenUsedKg, energyUsedKwh, waterUsedLiters, radiationMsv, oxygenRemaining, energyRemaining, waterRemaining,
+    margins, constraints, limitingFactor, limitingMarginPercent: margins[limitingFactor] * 100, feasible };
+}
+
+/** Flat (terrain-unaware) estimate used for instant slider feedback; terrain-aware results come from the API. */
+export function evaluateMission(oneWay: Coordinate[], config: MissionConfig) {
+  const r = evaluateSummary(flatSummary(routeDistance(oneWay)), config);
+  return { ...r, oneWayKm: routeDistance(oneWay), constraintsOk: r.constraints };
 }
 
 export function coordinateToVector(point: Coordinate, radius = 2.02): [number, number, number] {
@@ -103,9 +96,16 @@ export function coordinateToVector(point: Coordinate, radius = 2.02): [number, n
   return [-radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
 }
 
+/** Inverse of coordinateToVector (any radius): globe-local point → planetocentric lat, east-positive lon. */
+export function vectorToCoordinate(x: number, y: number, z: number): Coordinate {
+  const r = Math.hypot(x, y, z) || 1;
+  return { lat: 90 - deg(Math.acos(Math.max(-1, Math.min(1, y / r)))), lon: normalizeLon(deg(Math.atan2(z, -x)) - 180) };
+}
+
 export const DEFAULT_CONFIG: MissionConfig = {
   crew: 2, speedKmh: 4.5, oxygenKg: 18, oxygenKgPerPersonHour: 0.084,
   energyKwh: 45, energyKwhPerHour: 1.2, waterLiters: 12, waterLitersPerPersonDay: 2.5,
   radiationMsvPerHour: 0.025, maxRadiationMsv: 1, reservePercent: 20,
   maxHours: 18, scienceHours: 1.5, contingencyPercent: 15, returnRequired: true,
+  maxSlopeDeg: 15, roverMassKg: 1500, drivetrainEfficiency: 0.6,
 };

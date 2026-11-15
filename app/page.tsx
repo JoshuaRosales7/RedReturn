@@ -1,5 +1,5 @@
-import MarsCommandCenter from "@/components/MarsCommandCenter";
+import AppShell from "@/components/AppShell";
 
 export default function Home() {
-  return <MarsCommandCenter />;
+  return <AppShell />;
 }

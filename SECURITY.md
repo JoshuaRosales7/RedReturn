@@ -1,30 +1,7 @@
-# Security policy
+# Security
 
-## Supported code
+RedReturn is a research/education prototype. Report vulnerabilities privately to the maintainers (do not open a public issue with exploit details).
 
-Security fixes target the current `main` branch. This educational project does not maintain long-term release branches.
+Controls in this repository: input bounds on every API field; request-body and computation limits; per-IP rate limiting (in-memory, single instance – put a gateway in front for multi-instance deployments); CORS allow-list via `REDRETURN_CORS_ORIGINS`; no secrets in `NEXT_PUBLIC_*`; optional `OPENAI_API_KEY`/`OPENAI_MODEL` are server-side only; error responses never include exception text; non-root API container.
 
-## Reporting a vulnerability
-
-Do not open a public issue for vulnerabilities, exposed credentials, unsafe deployment configuration, or private mission data.
-
-Contact the repository owner privately through the GitHub profile associated with the repository. Include:
-
-- the affected component and commit;
-- reproduction steps;
-- expected impact;
-- a minimal proof of concept with secrets removed;
-- a suggested mitigation when available.
-
-Please allow reasonable time for investigation before public disclosure.
-
-## Secrets and data
-
-- Never commit `OPENAI_API_KEY` or other service credentials.
-- Keep `.env` files local; use `.env.example` for documented variable names only.
-- Treat exported mission packages and logs as potentially sensitive when they contain real people or operational details.
-- The frontend must never receive server-side API secrets.
-
-## Scope note
-
-RedReturn is educational and experimental. Security fixes do not make it certified operational, medical, or navigation software.
+Known limits: the rate limiter trusts the socket peer address (configure `--proxy-headers` behind a trusted proxy); no authentication (the API serves public, read-only scientific computations).

@@ -1,0 +1,17 @@
+{
+  "id": "jezero-rim-traverse",
+  "title": "Jezero rim traverse: the shortest line is not the answer",
+  "origin": {"lat": 18.38, "lon": 77.58, "name": "Jezero base (crater-centre reference point)"},
+  "destination": {"lat": 18.6, "lon": 77.2, "name": "Western rim target (demo coordinate, not a gazetteer feature)"},
+  "science_stops": [{"name": "Intermediate science stop (demo coordinate)", "lat": 18.5, "lon": 77.38, "dwell_hours": 0.75, "weight": 1.0}],
+  "config": {},
+  "incident": {"kinds": [{"kind": "battery_loss", "magnitude": 35}, {"kind": "speed_reduction", "magnitude": 30}], "at_progress": 0.6},
+  "runs": 3000, "seed": 20261114,
+  "narrative": [
+    "A two-person crew leaves a base at the Jezero crater reference point for a rim target ~25 km away.",
+    "The great-circle line looks shortest, but real MOLA elevations show slopes above the 15° scenario limit.",
+    "Terrain-aware and resource-conservative routes avoid them with a ~3 km detour and less climbing.",
+    "At 60% of the outbound leg a 35% battery capacity loss and 30% speed loss are simulated.",
+    "Continuing breaks the modelled reserves; RedReturn recalculates and shows the revised mission (abort and return)."
+  ]
+}

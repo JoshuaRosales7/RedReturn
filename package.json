@@ -8,7 +8,9 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "api": ".\\.venv\\Scripts\\python.exe -m uvicorn api.main:app --env-file .env.local --reload --port 8000"
+    "api": "python -m uvicorn api.main:app --reload --port 8000",
+    "typecheck": "tsc --noEmit",
+    "test:api": "python -m pytest api -q"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
@@ -23,6 +25,8 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",

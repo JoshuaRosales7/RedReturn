@@ -1,324 +1,80 @@
-<p align="center">
-  <img src="docs/assets/redreturn-banner.svg" alt="RedReturn — Explore farther. Return safer." width="100%">
-</p>
+<p align="center"><img src="docs/assets/redreturn-banner.svg" alt="RedReturn" width="100%"></p>
 
-<p align="center">
-  <strong>AI-assisted Mars expedition planning and survival intelligence</strong><br>
-  <em>Explore the planet, model uncertainty, protect the crew, and plan the return.</em>
-</p>
+# RedReturn — Mars mission decision intelligence
 
-<p align="center">
-  <img src="https://img.shields.io/badge/NASA-Space%20Apps-0B3D91?style=for-the-badge&logo=nasa" alt="NASA Space Apps">
-  <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js 15">
-  <img src="https://img.shields.io/badge/React-19-149ECA?style=for-the-badge&logo=react&logoColor=white" alt="React 19">
-  <img src="https://img.shields.io/badge/Three.js-WebGL-000000?style=for-the-badge&logo=threedotjs" alt="Three.js">
-  <img src="https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/ARES-AI%20Copilot-7C83FD?style=for-the-badge" alt="ARES AI Copilot">
-</p>
+> **Can a crew reach a science target on Mars, survive plausible failures, and return with margin?**
+> Real NASA MOLA elevation → route alternatives → explainable uncertainty → failure-aware revised mission.
 
-<p align="center">
-  <a href="#-quick-start">Quick start</a> ·
-  <a href="#-mission-capabilities">Capabilities</a> ·
-  <a href="#-system-architecture">Architecture</a> ·
-  <a href="#-api-reference">API</a> ·
-  <a href="#-scientific-integrity">Scientific integrity</a>
-</p>
+Built for **NASA Space Apps 2026 — [Interplanetary Survival Guide: Martian Map](https://www.spaceappschallenge.org/2026/challenges/interplanetary-survival-guide-martian-map/)**.
+Educational research prototype. **Not operational guidance; never certifies a route; not validated or endorsed by NASA.**
 
----
-
-## 🚀 Mission overview
-
-**RedReturn** is an interactive mission-planning platform for human exploration of Mars. It combines global route geometry, 3D planetary visualization, crew-resource modeling, deterministic simulation, uncertainty analysis, and an optional generative AI briefing layer.
-
-The central question is simple:
-
-> Can the crew reach the scientific objective and return to base while preserving oxygen, energy, water, time, radiation, and contingency margins?
-
-The application is designed as an educational NASA Space Apps project. Every result distinguishes between **calculated facts**, **scenario assumptions**, and **missing scientific data**.
-
-> [!IMPORTANT]
-> RedReturn is experimental planning software—not certified navigation, medical guidance, or operational mission control.
-
----
-
-## 🧭 Mission capabilities
-
-### 🪐 Advanced orbital operations
-
-- Interactive 3D Mars globe using NASA Mars Trek MGS/MOLA imagery.
-- Fresnel atmospheric glow, solar illumination, day/night terminator, orbital guides, Phobos and Deimos.
-- Animated route telemetry, surface-oriented beacons, mission vehicle, landmarks, and cinematic/manual cameras.
-- Full-planet 2D equirectangular map with a shared coordinate and route state.
-- Planetocentric latitude and east-positive longitude following the Mars 2000 convention.
-
-### ⛰️ Terrain Lab 3D
-
-- Reproducible local terrain corridor with craters, ridges, and a route-following vehicle.
-- Adjustable vertical exaggeration, contour mesh, and slope/roughness risk overlay.
-- Longitudinal terrain and slope profile synchronized with the active route.
-- Explicit **conceptual proxy** status until a numeric MOLA/HRSC DEM is mounted.
-
-### 🧠 ARES mission copilot
-
-- Reproducible Monte Carlo scenario engine that remains available offline.
-- Simultaneous success probability across oxygen, energy, water, radiation, and time.
-- Automatic limiting-factor detection and one-click configuration improvements.
-- Natural-language mission questions and briefings.
-- Optional OpenAI Structured Outputs integration; the model explains verified calculations but never replaces them.
-
-### 🧑‍🚀 Survival and mission simulation
-
-- Round-trip distance, duration, resource consumption, reserve, radiation, and contingency calculations.
-- Crew size, speed, science time, consumptions, inventory, and limits remain editable.
-- Four route objectives: direct, conservative, science, and resource-limited.
-- Deterministic playback for outbound and return phases.
-- JSON mission package, GeoJSON route, and PDF intelligence report exports.
-
-### 🔬 Transparent science contract
-
-- Global great-circle geometry with antimeridian and polar handling.
-- Typed route-quality states: `global-geometric`, `mola-evaluated`, and `high-resolution-dem`.
-- Missing numeric elevation returns `insufficient-data` / HTTP `501`; zero elevation is never fabricated.
-- Terrain visualization effects never silently upgrade route safety.
-
----
-
-## 🏗️ System architecture
-
-```mermaid
-flowchart LR
-    subgraph Client[Next.js 15 client]
-        UI[Mission Command Center]
-        Globe[Orbital 3D Globe]
-        Terrain[Terrain Lab 3D]
-        Store[Zustand Mission State]
-        Model[Geodesy + Survival Model]
-        LocalAI[ARES Monte Carlo Engine]
-        UI --> Store
-        Store --> Globe
-        Store --> Terrain
-        Store --> Model
-        Model --> LocalAI
-    end
-
-    subgraph API[FastAPI service]
-        Contracts[Validated Mission Contracts]
-        Routes[Route Planner]
-        Eval[Mission Evaluator]
-        ARES[ARES Hybrid Copilot]
-        Contracts --> Routes
-        Contracts --> Eval
-        Eval --> ARES
-    end
-
-    subgraph Data[Scientific data]
-        Trek[NASA Mars Trek WMTS]
-        MOLA[MOLA MEGDR catalog]
-        USGS[USGS coordinates]
-    end
-
-    Store <-->|optional HTTP| Contracts
-    Trek --> Globe
-    MOLA -. numeric DEM not mounted .-> Terrain
-    USGS --> Model
-    ARES -. optional structured briefing .-> OpenAI[OpenAI Responses API]
-```
-
-### Technology stack
-
-| Layer | Technology |
+## What it does
+| Tab | Decision it supports |
 |---|---|
-| Application | Next.js 15, React 19, TypeScript |
-| 3D visualization | React Three Fiber, Three.js, Drei, WebGL |
-| State | Zustand |
-| Charts | Recharts |
-| API | FastAPI, Pydantic, Uvicorn |
-| AI | Deterministic Monte Carlo + optional OpenAI Responses API |
-| Geometry | Mars great-circle interpolation + local A* foundation |
-| Reports | jsPDF, JSON, GeoJSON |
-| Delivery | Static Next.js export, Docker, Docker Compose |
+| Overview | Is the mission feasible *within the model*, how thin is the return margin, how good is the data? |
+| Mars Explorer | Pick base/target on a 3D globe + 2D map synced with NASA Trek layers (MOLA, Viking, THEMIS, TES); see where numeric terrain exists. |
+| Terrain | Relief map / 3D mesh from **real MOLA elevations**, elevation + slope profiles, resolution and coverage disclosure. |
+| Planner | Crew, rover, consumables, reserves, science stops; four route strategies with different objectives and the reason for the recommendation. |
+| Risk Lab | Seeded Monte Carlo (hypothetical inputs), sensitivity, failure modes, P10/P50/P90, measurement-vs-model-vs-scenario uncertainty, "Why this result?". |
+| Emergency | Inject battery/speed/oxygen/water/delay/comms/obstruction incidents → ORIGINAL vs FAILURE vs REVISED mission with causes, options and levers. |
+| ARES | Questions answered **from the calculations** (provenance badge, tools used, uncertainty). Optional LLM paraphrase is off by default. |
+| Reports | PDF, JSON (with reproducibility hashes), GeoJSON; data sources by class A–E; challenge alignment. |
 
-More detail is available in [Architecture](docs/ARCHITECTURE.md) and [Verification](docs/VERIFICATION.md).
+First visit opens a plain-language guided tour (replay with **?**); a **Glossary** explains every term; the Overview shows mission progress step by step. The address bar always holds the current mission (base, target, stops, changed settings) — **Copy mission link** shares or bookmarks it. If the API is unreachable, only the Jezero demo is shown, from a labelled precomputed snapshot.
 
----
-
-## ⚡ Quick start
-
-### Requirements
-
-- Node.js 20+
-- npm 10+
-- Python 3.11+ for the optional API
-
-### Frontend
-
-```powershell
-git clone https://github.com/JoshuaRosales7/redreturn.git
-cd redreturn
-npm.cmd install
-npm.cmd run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-Direct views:
-
-- `http://localhost:3000/?view=globe`
-- `http://localhost:3000/?view=map`
-- `http://localhost:3000/?view=terrain`
-
-### Optional FastAPI service
-
-```powershell
-py -m venv .venv
-.venv\Scripts\python -m pip install -r api\requirements.txt
-.venv\Scripts\python -m uvicorn api.main:app --reload --port 8000
-```
-
-Interactive API documentation: [http://localhost:8000/docs](http://localhost:8000/docs).
-
-### Environment variables
-
-Copy `.env.example` to `.env.local` for the frontend and provide backend variables in the API process environment.
-
-| Variable | Required | Purpose |
-|---|---:|---|
-| `NEXT_PUBLIC_API_URL` | No | FastAPI base URL; defaults to `http://localhost:8000` |
-| `NEXT_PUBLIC_MARS_TILE_BASE` | No | NASA Mars Trek WMTS tile override |
-| `OPENAI_API_KEY` | No | Enables generative ARES briefings |
-| `OPENAI_MODEL` | No | Structured-output model used by ARES |
-
-Without an OpenAI key, the complete local ARES probability engine and recommendations continue to work.
-
----
-
-## 📡 API reference
-
-| Endpoint | Method | Description |
-|---|:---:|---|
-| `/api/health` | GET | Service status and enabled ARES capabilities |
-| `/api/regions` | GET | Curated Mars locations and coordinate convention |
-| `/api/layers` | GET | Configured scientific layers |
-| `/api/terrain/elevation` | GET | Numeric elevation contract; returns `501` until DEM configuration |
-| `/api/terrain/profile` | GET | Route elevation contract; returns `501` until DEM configuration |
-| `/api/routes/plan` | POST | Plan a typed global-geometric route |
-| `/api/routes/compare` | POST | Compare route strategies |
-| `/api/mission/evaluate` | POST | Evaluate mission resources and constraints |
-| `/api/mission/simulate` | POST | Generate the deterministic mission timeline |
-| `/api/ai/mission-copilot` | POST | Run uncertainty analysis and optional AI briefing |
-| `/api/science/locations` | GET | Curated science locations |
-| `/api/datasets/status` | GET | Dataset configuration and availability |
-
-### Example: evaluate a mission
-
+## Quick start
 ```bash
-curl -X POST http://localhost:8000/api/mission/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "route": {
-      "coordinates": [{"lat": 18.38, "lon": 77.58}, {"lat": 18.65, "lon": 78.15}],
-      "distance_km": 35.7,
-      "strategy": "direct",
-      "quality": "global-geometric",
-      "terrain_evaluated": false,
-      "warnings": ["Terrain not evaluated"]
-    },
-    "config": {"crew": 2, "return_required": true}
-  }'
+# API (Python 3.12)
+python3.12 -m venv .venv && .venv/bin/pip install -r api/requirements.txt
+.venv/bin/python -m uvicorn api.main:app --port 8000        # docs: http://localhost:8000/docs
+
+# Web (Node 22)
+npm ci && npm run build && python3 -m http.server 3000 --directory out   # or: npm run dev
 ```
+Set `NEXT_PUBLIC_API_URL` at build time to your deployed API. Copy `.env.example` for all variables.
 
----
-
-## 🧪 Verification
-
-```powershell
-npm.cmd test
-npm.cmd run build
-.venv\Scripts\python -m pytest api\test_main.py
+## Verify
+```bash
+npm run typecheck && npm test        # TypeScript, 23 Vitest cases incl. golden parity with Python
+.venv/bin/python -m pytest api -q    # 76 cases: geodesy, DEM, routing, mission, risk, emergency, API contracts
+.venv/bin/python scripts/validate_independent.py   # 16 independent recomputation checks of the demo
+docker compose up -d --build && npx playwright test   # 23 e2e: journeys, axe accessibility, 375/768/1280 px, API-down fallback
+npm run build
 ```
+Results actually recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
-The test suite covers geodesy, antimeridian and polar behavior, resource constraints, ARES reproducibility, conceptual terrain stability, API honesty, and local A* routing.
+## Real data
+`api/data/dem/*.tif` are windows of the **USGS/NASA MGS MOLA 463 m DEM** (int16 metres above the MOLA areoid, nodata preserved) for Jezero and Gale, ~1 MB each with SHA-256 and source ETag. Rebuild with `scripts/build_mola_windows.py`. Colour tiles are display-only and never converted to numbers.
 
-GitHub Actions runs frontend and backend verification on every pull request and push to `main`.
+**Anywhere else on Mars:** when base and target are outside those windows, the API downloads the real MOLA window around the route on demand (`api/datasets/mola_remote.py`). The global mosaic is an uncompressed int16 strip TIFF, so only the needed bytes of each row are fetched with HTTP range requests (typically 5–60 s, once per area); the TIFF layout is verified first and values are stored untouched with the same provenance sidecar (`"on_demand": true`). Requires internet access from the API host. Settings:
 
----
-
-## 📁 Repository structure
-
-```text
-redreturn/
-├── app/                         # Next.js shell and global interface
-├── components/
-│   ├── AdvancedMarsGlobe.tsx    # Orbital WebGL scene
-│   ├── TerrainLab3D.tsx         # Local terrain corridor
-│   └── MarsCommandCenter.tsx    # Mission experience
-├── lib/
-│   ├── mars.ts                  # Geodesy and survival calculations
-│   ├── terrain.ts               # Terrain proxy contract
-│   ├── ares.ts                  # Offline uncertainty engine
-│   └── store.ts                 # Shared mission state
-├── api/                         # FastAPI contracts and services
-├── data/                        # Scientific source catalog
-├── tests/                       # TypeScript verification
-├── docs/                        # Architecture and scientific limits
-└── .github/                     # CI and contribution templates
-```
-
----
-
-## 🛰️ Scientific provenance
-
-- [NASA Mars Trek WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars) — global MGS/MOLA visual basemap.
-- [NASA PDS MOLA MEGDR](https://pds.nasa.gov/ds-view/pds/viewDataset.jsp?dsid=MGS-M-MOLA-5-MEGDR-L3-V1.0) — authoritative gridded topography archive, catalogued but not mounted.
-- [USGS planetary coordinate guidance](https://planetarynames.wr.usgs.gov/TargetCoordinates) — planetocentric latitude and east-positive longitude.
-
-### Dataset status
-
-| Product | Role | Status |
+| Variable | Default | Meaning |
 |---|---|---|
-| MGS MOLA color hillshade | Global visual context | Configured |
-| MOLA MEGDR numeric DEM | Elevation and slope | Catalogued, not mounted |
-| Terrain Lab | UI and workflow preview | Conceptual proxy |
-| Radiation | Editable constant-rate scenario | Not a live forecast |
+| `REDRETURN_DEM_ON_DEMAND` | `1` | `0` disables downloads (only the shipped windows are used) |
+| `REDRETURN_DEM_CACHE_DIR` | `api/data/dem/ondemand` | where downloaded areas are stored (git-ignored) |
+| `REDRETURN_DEM_CACHE_MAX` | `40` | stored areas kept; the oldest are evicted |
+| `REDRETURN_DEM_DOWNLOADS_PER_MIN` | `6` | new-area downloads per minute (HTTP 429 beyond) |
 
----
+**Local vs long-range:** base and target within 3° of latitude and longitude (≈150–180 km) get the full local analysis on the 463 m grid. Farther apart, `POST /api/routes/long-range` reads every *f*-th MOLA row and column (exact source values, never averaged; *f* chosen so the grid stays ≤ `REDRETURN_LONG_RANGE_MAX_CELLS`, default 150 000) and plans a straight and a terrain-aware **overview** route; the Planner shows travel time, sols and supplies as labelled class-C estimates. At kilometre spacing slopes and obstacles are invisible, so long-range routes are for orientation only — Risk Lab, Emergency and ARES require a local excursion. Routes across the 180° meridian are not supported yet. See [docs/DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md).
 
-## 🛡️ Scientific integrity
+## Scientific rules enforced
+Visual texture is not elevation · nodata stays missing · interpolated values are flagged · a 463 m DEM cannot see hazards under ~1 km · Monte Carlo output is **not** a survival probability · terrain-evaluated ≠ safe · no route is ever certified. Details: [docs/SCIENTIFIC_VALIDATION.md](docs/SCIENTIFIC_VALIDATION.md).
 
-RedReturn intentionally refuses to claim data it does not possess:
+## API (OpenAPI at `/docs`)
+`GET /api/health · /api/diagnostics · /api/datasets · /api/datasets/status · /api/terrain/coverage · /api/terrain/elevation · /api/terrain/heightfield · /api/demo` ·
+`POST /api/terrain/profile · /api/routes/alternatives · /api/risk/analyze · /api/scenarios/simulate · /api/ares/ask · /api/reports/json · /api/reports/geojson`; legacy `/api/routes/plan|compare`, `/api/mission/evaluate|simulate`, `/api/ai/mission-copilot` (deprecated) kept. All errors: `{"error":{"code","message","details"}}`.
 
-- Global routes are geometric, not terrain-certified.
-- The Terrain Lab is visually useful but does not represent measured MOLA elevations.
-- Radiation is a configurable exposure scenario, not current space-weather telemetry.
-- Resource rates are transparent educational assumptions.
-- “Favorable within model” never means “operationally safe.”
+## Deploy
+Static web: any static host (`out/`). API: `api/Dockerfile` or `render.yaml`; set `REDRETURN_CORS_ORIGINS` to the web origin. No secrets are needed for the demo; no promotional cloud credits are used.
 
----
+## Docs
+[AUDIT_2026](docs/AUDIT_2026.md) · [CHALLENGE_ALIGNMENT](docs/CHALLENGE_ALIGNMENT.md) · [DATA_PROVENANCE](docs/DATA_PROVENANCE.md) · [SCIENTIFIC_VALIDATION](docs/SCIENTIFIC_VALIDATION.md) · [ARCHITECTURE](docs/ARCHITECTURE.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [JUDGING_EVIDENCE](docs/JUDGING_EVIDENCE.md) · [GLOBAL_OFFERS](docs/GLOBAL_OFFERS.md) · [VERIFICATION](docs/VERIFICATION.md) · [VALIDATION_RESULTS](docs/VALIDATION_RESULTS.md) · [RELEASE_READINESS](docs/RELEASE_READINESS.md) · [COMPLIANCE](docs/COMPLIANCE.md) · [SUBMISSION_PACK](docs/SUBMISSION_PACK.md) · [REFERENCES](docs/REFERENCES.md) · [SI_USE](docs/SI_USE.md) · [FINAL_REPORT](docs/FINAL_REPORT.md)
 
-## 🗺️ Roadmap
+## Known limitations
+No rock/boulder or soil data; 463 m terrain only; other regions need internet access from the API for a one-time MOLA download; constant-rate resource model; optional LLM layer untested; no public deployment yet; pre-existing-code eligibility is unresolved ([COMPLIANCE](docs/COMPLIANCE.md)).
 
-- [ ] Mount and window-read a numeric MOLA MEGDR raster.
-- [ ] Refine global routes with slope, roughness, and trafficability costs.
-- [ ] Discover CTX/HiRISE coverage and load high-resolution DEM corridors.
-- [ ] Add terrain-following camera and saved mission library.
-- [ ] Implement server-side mission snapshots and collaborative mission review.
-- [ ] Add offline scientific tile caching and cancelable backend jobs.
+## SI-assisted development
+This repository was built with AI coding assistants (earlier commits: "Codex"; hackathon-day work: Claude via Claude Code). See [docs/SI_USE.md](docs/SI_USE.md). All numerical results come from deterministic code.
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Please preserve the project’s central rule: visual quality must never be presented as scientific certainty.
-
-For security concerns, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
-
----
-
-## 🌌 Acknowledgements
-
-Built for the **NASA International Space Apps Challenge**, with data and guidance from NASA, the Planetary Data System, and the United States Geological Survey.
-
-<p align="center">
-  <strong>Explore farther. Return safer.</strong><br>
-  <sub>RedReturn · Educational and experimental mission intelligence</sub>
-</p>
+## License
+No LICENSE file yet — see [docs/COMPLIANCE.md](docs/COMPLIANCE.md). Space Apps default: Apache-2.0 if none is stated.

@@ -15,48 +15,60 @@ concurrency:
 
 jobs:
   frontend:
-    name: Frontend tests and production build
+    name: Frontend typecheck, tests (incl. golden parity) and static build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run deterministic tests
-        run: npm test
-
-      - name: Build static mission platform
-        run: npm run build
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
 
   backend:
-    name: FastAPI contract tests
+    name: API tests (geodesy, DEM, routing, mission, risk, emergency, contracts)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Use Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: api/requirements.txt
+      - run: python -m pip install --upgrade pip && python -m pip install -r api/requirements.txt
+      - run: python -m pytest api -q
+      - name: Golden vectors are up to date
+        run: python scripts/gen_golden.py && git diff --exit-code tests/golden
+      - name: Independent recomputation of the demo (second implementation)
+        run: python scripts/validate_independent.py
 
-      - name: Install API dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -r api/requirements.txt
-
-      - name: Verify API contracts
-        run: python -m pytest api/test_main.py -q
-
+  e2e:
+    name: Docker stack + Playwright (journeys, axe accessibility, responsive)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: docker compose up -d --build
+      - name: Wait for API health
+        run: for i in $(seq 1 40); do curl -sf http://localhost:8000/api/health && break; sleep 3; done
+      - run: npx playwright test
+        env:
+          CI: "true"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results

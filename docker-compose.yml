@@ -1,9 +1,18 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     ports: ["3000:80"]
   api:
     build:
       context: .
       dockerfile: api/Dockerfile
+    environment:
+      REDRETURN_CORS_ORIGINS: http://localhost:3000
     ports: ["8000:8000"]
+    volumes:
+      - dem-cache:/app/api/data/dem/ondemand   # MOLA areas downloaded on demand survive restarts
+volumes:
+  dem-cache:

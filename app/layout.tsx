@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RedReturn | Inteligencia de misión",
-  description: "Planifica, compara y simula expediciones marcianas con un modelo científico transparente.",
+  title: "RedReturn | Mars mission decision intelligence",
+  description: "Can a crew reach a Martian science target, survive plausible failures, and return? Real NASA MOLA terrain, explainable uncertainty, revised-mission planning.",
 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0a0d11" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="es"><body>{children}</body></html>;
+  return <html lang="en"><body>{children}</body></html>;
 }

@@ -1,0 +1,18 @@
+# Render.com blueprint: free-tier friendly API host so the demo never depends on a laptop.
+# The static web app (npm run build -> out/) can be hosted on any static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages).
+services:
+  - type: web
+    name: redreturn-api
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: REDRETURN_CORS_ORIGINS
+        sync: false            # set to your deployed web origin, e.g. https://redreturn.example.app
+      - key: REDRETURN_RATE_PER_MIN
+        value: "600"
+      - key: OPENAI_API_KEY    # optional; server-side only
+        sync: false
+      - key: OPENAI_MODEL      # optional; must be set together with the key
+        sync: false

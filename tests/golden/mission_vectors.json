@@ -1,0 +1,239 @@
+{
+  "geodesy": [
+    {
+      "a": [
+        0,
+        0
+      ],
+      "b": [
+        0,
+        1
+      ],
+      "km": 59.27469752330622
+    },
+    {
+      "a": [
+        0,
+        179
+      ],
+      "b": [
+        0,
+        -179
+      ],
+      "km": 118.54939504661245
+    },
+    {
+      "a": [
+        18.38,
+        77.58
+      ],
+      "b": [
+        18.6,
+        77.2
+      ],
+      "km": 25.02743015056279
+    },
+    {
+      "a": [
+        90,
+        0
+      ],
+      "b": [
+        90,
+        170
+      ],
+      "km": 4.143306455244911e-13
+    },
+    {
+      "a": [
+        -45,
+        10
+      ],
+      "b": [
+        30,
+        -170
+      ],
+      "km": 9780.32509134553
+    }
+  ],
+  "mission": {
+    "default_flat_10km": {
+      "config": {},
+      "expected": {
+        "distance_km": 20,
+        "duration_hours": 5.944444444444445,
+        "energy_remaining_kwh": 36.79666666666667,
+        "energy_used_kwh": 8.203333333333333,
+        "feasible_within_model": true,
+        "limiting_factor": "energy",
+        "oxygen_remaining_kg": 16.851533333333332,
+        "oxygen_used_kg": 1.1484666666666667,
+        "radiation_msv": 0.1486111111111111,
+        "water_remaining_liters": 10.575810185185185,
+        "water_used_liters": 1.4241898148148149
+      },
+      "route": {
+        "ascent_back_m": 0,
+        "ascent_out_m": 0,
+        "effective_km": 10,
+        "one_way_km": 10,
+        "terrain_evaluated": false
+      }
+    },
+    "default_terrain": {
+      "config": {},
+      "expected": {
+        "distance_km": 44.0,
+        "duration_hours": 12.38888888888889,
+        "energy_remaining_kwh": 27.251506944444444,
+        "energy_used_kwh": 17.748493055555556,
+        "feasible_within_model": true,
+        "limiting_factor": "time",
+        "oxygen_remaining_kg": 15.606466666666666,
+        "oxygen_used_kg": 2.3935333333333335,
+        "radiation_msv": 0.30972222222222223,
+        "water_remaining_liters": 9.031828703703704,
+        "water_used_liters": 2.9681712962962963
+      },
+      "route": {
+        "ascent_back_m": 30.0,
+        "ascent_out_m": 190.0,
+        "effective_km": 24.5,
+        "one_way_km": 22.0,
+        "terrain_evaluated": true
+      }
+    },
+    "impossible": {
+      "config": {
+        "energy_kwh": 0,
+        "oxygen_kg": 0
+      },
+      "expected": {
+        "distance_km": 20,
+        "duration_hours": 5.944444444444445,
+        "energy_remaining_kwh": -8.203333333333333,
+        "energy_used_kwh": 8.203333333333333,
+        "feasible_within_model": false,
+        "limiting_factor": "oxygen",
+        "oxygen_remaining_kg": -1.1484666666666667,
+        "oxygen_used_kg": 1.1484666666666667,
+        "radiation_msv": 0.1486111111111111,
+        "water_remaining_liters": 10.575810185185185,
+        "water_used_liters": 1.4241898148148149
+      },
+      "route": {
+        "ascent_back_m": 0,
+        "ascent_out_m": 0,
+        "effective_km": 10,
+        "one_way_km": 10,
+        "terrain_evaluated": false
+      }
+    },
+    "one_way": {
+      "config": {
+        "crew": 3,
+        "return_required": false
+      },
+      "expected": {
+        "distance_km": 12,
+        "duration_hours": 4.277777777777778,
+        "energy_remaining_kwh": 38.800381944444446,
+        "energy_used_kwh": 6.199618055555554,
+        "feasible_within_model": true,
+        "limiting_factor": "energy",
+        "oxygen_remaining_kg": 16.7603,
+        "oxygen_used_kg": 1.2397,
+        "radiation_msv": 0.10694444444444445,
+        "water_remaining_liters": 10.46267361111111,
+        "water_used_liters": 1.5373263888888888
+      },
+      "route": {
+        "ascent_back_m": 20,
+        "ascent_out_m": 100,
+        "effective_km": 12.5,
+        "one_way_km": 12,
+        "terrain_evaluated": true
+      }
+    },
+    "tight_oxygen": {
+      "config": {
+        "oxygen_kg": 2.5
+      },
+      "expected": {
+        "distance_km": 30,
+        "duration_hours": 8.61111111111111,
+        "energy_remaining_kwh": 32.76112500000001,
+        "energy_used_kwh": 12.238874999999997,
+        "feasible_within_model": true,
+        "limiting_factor": "oxygen",
+        "oxygen_remaining_kg": 0.8363333333333334,
+        "oxygen_used_kg": 1.6636666666666666,
+        "radiation_msv": 0.2152777777777778,
+        "water_remaining_liters": 9.936921296296298,
+        "water_used_liters": 2.0630787037037033
+      },
+      "route": {
+        "ascent_back_m": 40,
+        "ascent_out_m": 80,
+        "effective_km": 16,
+        "one_way_km": 15,
+        "terrain_evaluated": true
+      }
+    },
+    "time_limited": {
+      "config": {
+        "max_hours": 14
+      },
+      "expected": {
+        "distance_km": 60,
+        "duration_hours": 16.166666666666664,
+        "energy_remaining_kwh": 21.445604166666673,
+        "energy_used_kwh": 23.554395833333327,
+        "feasible_within_model": false,
+        "limiting_factor": "time",
+        "oxygen_remaining_kg": 14.8766,
+        "oxygen_used_kg": 3.1233999999999993,
+        "radiation_msv": 0.4041666666666666,
+        "water_remaining_liters": 8.12673611111111,
+        "water_used_liters": 3.8732638888888884
+      },
+      "route": {
+        "ascent_back_m": 120,
+        "ascent_out_m": 300,
+        "effective_km": 33,
+        "one_way_km": 30,
+        "terrain_evaluated": true
+      }
+    }
+  },
+  "normalize_lon": [
+    [
+      190,
+      -170.0
+    ],
+    [
+      -190,
+      170.0
+    ],
+    [
+      360,
+      0.0
+    ],
+    [
+      180,
+      -180.0
+    ],
+    [
+      -180,
+      -180.0
+    ],
+    [
+      540,
+      -180.0
+    ],
+    [
+      0,
+      0.0
+    ]
+  ]
+}

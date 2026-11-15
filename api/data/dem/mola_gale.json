@@ -1,0 +1,32 @@
+{
+  "id": "gale",
+  "name": "Gale Crater / Aeolis Mons region",
+  "file": "mola_gale.tif",
+  "sha256": "84cc53fd0fa7531116644d9b3cc387f52348454a35d4bb0875ca1ab46950aa91",
+  "source": {
+    "dataset": "Mars MGS MOLA DEM 463m (MEGDR derived mosaic)",
+    "organization": "NASA MGS MOLA Science Team; mosaic distributed by USGS Astrogeology",
+    "landing_page": "https://astrogeology.usgs.gov/search/map/mars_mgs_mola_dem_463m",
+    "download_url": "https://planetarymaps.usgs.gov/mosaic/Mars_MGS_MOLA_DEM_mosaic_global_463m.tif",
+    "range_read_url": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars_MGS_MOLA_DEM_mosaic_global_463m.tif",
+    "etag": "\"cccf7001294ee9f503b13318eab83086-254\"",
+    "last_modified": "Thu, 10 Nov 2022 03:31:07 GMT",
+    "content_length": "2125771142"
+  },
+  "window": {
+    "col_off": 40166,
+    "row_off": 11699,
+    "width": 1025,
+    "height": 1025
+  },
+  "pixel_size_m": 463.0935415503709,
+  "nodata": -32768.0,
+  "valid_fraction": 1.0,
+  "min_m": -4607,
+  "max_m": 2425,
+  "built_at_utc": "2026-11-14T23:09:18+00:00",
+  "processing": [
+    "Windowed read via HTTP range requests; no resampling, filling or scaling.",
+    "Stored as int16 deflate GeoTIFF; nodata value preserved."
+  ]
+}
