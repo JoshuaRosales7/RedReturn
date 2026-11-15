@@ -4,13 +4,18 @@ The static web app falls back to this snapshot (clearly labelled) when the API i
 demonstration survives a network failure without duplicating scientific logic in TypeScript.
 """
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+# The snapshot must depend only on the shipped MOLA windows: no network downloads, and no areas cached by local runs.
+os.environ["REDRETURN_DEM_ON_DEMAND"] = "0"
+os.environ["REDRETURN_DEM_CACHE_DIR"] = tempfile.mkdtemp(prefix="redreturn-snapshot-")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from api.main import app  # noqa: E402

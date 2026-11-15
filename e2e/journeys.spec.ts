@@ -339,10 +339,12 @@ test.describe("3D globe", () => {
   test("a click on the globe sets the point actually under the cursor (regression: was 90° off in longitude)", async ({ page }) => {
     await openApp(page);
     await gotoTab(page, "explorer");
-    await page.locator(".globe").scrollIntoViewIfNeeded();                                  // the globe is created when it comes into view
+    const globe = page.locator(".globe[aria-label^='Interactive 3D Mars globe']");          // the real globe, not the lazy-load placeholder
+    await expect(globe).toBeAttached({ timeout: 60_000 });
+    await globe.scrollIntoViewIfNeeded();                                                    // the globe is created when it comes into view
     await expect(page.locator(".globe-res")).toBeVisible({ timeout: 60_000 });
     await page.locator(".win", { hasText: "Jezero" }).getByRole("button", { name: "Show on map" }).click();   // flies the globe over Jezero
-    await page.locator(".globe").scrollIntoViewIfNeeded();
+    await globe.scrollIntoViewIfNeeded();
     await page.waitForTimeout(3500);
     const box = (await page.locator(".globe canvas").boundingBox())!;
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);

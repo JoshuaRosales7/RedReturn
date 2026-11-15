@@ -136,3 +136,13 @@ def test_obstruction_blocks_original_path_and_replans(planned):
 def test_comms_reduction_is_flagged_as_assumption(planned):
     out = sim(planned, [Incident(kind="comms_reduction", magnitude=50)])
     assert any("ASSUMPTION" in s for s in out["incident"]["applied"])
+
+
+def test_spearman_ranks_average_ties_and_ignore_input_order():
+    import numpy as np
+    from api.scientific.risk import _rank
+    assert list(_rank(np.array([10.0, 20.0, 20.0, 5.0]))) == [1.0, 2.5, 2.5, 0.0]          # tie shares the mean rank
+    x = np.array([3.0, 1.0, 3.0, 3.0, 2.0, 1.0])
+    perm = np.array([5, 0, 3, 1, 4, 2])
+    r = _rank(x)
+    assert np.allclose(_rank(x[perm]), r[perm])                                               # same ranks whatever the order

@@ -123,7 +123,20 @@ def _quant(x: np.ndarray) -> dict:
 
 
 def _rank(x: np.ndarray) -> np.ndarray:
-    return np.argsort(np.argsort(x)).astype(float)
+    """Average ranks (tied values share the mean of their ranks) — the standard Spearman definition.
+
+    A plain argsort-of-argsort breaks ties in whatever order the sort leaves them, and numpy's default sort varies with the
+    CPU's SIMD support, which made sensitivities (and the result hash) differ between machines. A stable sort plus averaged
+    ties is exact and identical on every platform.
+    """
+    x = np.asarray(x)
+    order = np.argsort(x, kind="stable")
+    xs = x[order]
+    starts = np.r_[0, np.flatnonzero(xs[1:] != xs[:-1]) + 1]
+    ends = np.r_[starts[1:], len(x)]
+    ranks = np.empty(len(x), dtype=float)
+    ranks[order] = np.repeat((starts + ends - 1) / 2.0, ends - starts)
+    return ranks
 
 
 def analyze(route: RouteSummary, config, *, runs: int = 2000, seed: int = 20261114, science_hours: float | None = None,
