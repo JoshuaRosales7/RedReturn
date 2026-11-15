@@ -1,0 +1,10 @@
+# Railway: deploys the FastAPI service (not the static web app, which lives on Vercel).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

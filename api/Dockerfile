@@ -10,5 +10,6 @@ COPY api ./api
 RUN mkdir -p api/data/dem/ondemand && useradd -r -u 10001 app && chown -R app /app
 USER app
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=4).status==200 else 1)"
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import os,urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:%s/api/health' % os.getenv('PORT','8000'),timeout=4).status==200 else 1)"
+# Hosts such as Railway, Render or Cloud Run assign the port through $PORT; 8000 locally and in docker compose.
+CMD ["sh", "-c", "exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

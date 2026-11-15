@@ -65,7 +65,7 @@ Visual texture is not elevation · nodata stays missing · interpolated values a
 `POST /api/terrain/profile · /api/routes/alternatives · /api/risk/analyze · /api/scenarios/simulate · /api/ares/ask · /api/reports/json · /api/reports/geojson`; legacy `/api/routes/plan|compare`, `/api/mission/evaluate|simulate`, `/api/ai/mission-copilot` (deprecated) kept. All errors: `{"error":{"code","message","details"}}`.
 
 ## Deploy
-Static web: any static host (`out/`). API: `api/Dockerfile` or `render.yaml`; set `REDRETURN_CORS_ORIGINS` to the web origin. No secrets are needed for the demo; no promotional cloud credits are used.
+Static web: any static host (`out/`), e.g. Vercel; set `NEXT_PUBLIC_API_URL` to the API URL **before** building. API: `api/Dockerfile` (listens on `$PORT`, default 8000) via `railway.toml` (Railway), `render.yaml` (Render) or any Docker host; set `REDRETURN_CORS_ORIGINS` to the web origin and, optionally, `REDRETURN_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` for Vercel preview URLs. No secrets are needed for the demo; no promotional cloud credits are used.
 
 ## Docs
 [AUDIT_2026](docs/AUDIT_2026.md) · [CHALLENGE_ALIGNMENT](docs/CHALLENGE_ALIGNMENT.md) · [DATA_PROVENANCE](docs/DATA_PROVENANCE.md) · [SCIENTIFIC_VALIDATION](docs/SCIENTIFIC_VALIDATION.md) · [ARCHITECTURE](docs/ARCHITECTURE.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [JUDGING_EVIDENCE](docs/JUDGING_EVIDENCE.md) · [GLOBAL_OFFERS](docs/GLOBAL_OFFERS.md) · [VERIFICATION](docs/VERIFICATION.md) · [VALIDATION_RESULTS](docs/VALIDATION_RESULTS.md) · [RELEASE_READINESS](docs/RELEASE_READINESS.md) · [COMPLIANCE](docs/COMPLIANCE.md) · [SUBMISSION_PACK](docs/SUBMISSION_PACK.md) · [REFERENCES](docs/REFERENCES.md) · [SI_USE](docs/SI_USE.md) · [FINAL_REPORT](docs/FINAL_REPORT.md)
