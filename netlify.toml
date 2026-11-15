@@ -8,3 +8,33 @@
   NEXT_TELEMETRY_DISABLED = "1"
   # Public API address baked into the page at build time (Google Cloud Run deployment).
   NEXT_PUBLIC_API_URL = "https://redreturn-api-113287289372.us-central1.run.app"
+
+# Fingerprinted build assets never change: cache them for a year.
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+# Basic hardening for every page.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    X-Frame-Options = "SAMEORIGIN"
