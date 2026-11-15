@@ -68,7 +68,7 @@ export function FieldTab() {
       </PageHead>
       <div className="kpis" data-tour="fieldcard">
         <Stat label="Route" value={STRATEGY_LABEL[route.strategy].split(" ")[0]} detail={`${fmt(route.metrics.distance_km)} km one way · ${legs.length} legs`} />
-        <Stat label="Departure" value={eva.start ? local(eva.start, 0, s.origin.lon) : "—"} detail={eva.start ? `local solar time${eva.auto ? " (auto: after sunrise)" : ""}` : "no daylight (polar night)"} />
+        <Stat label="Departure" value={eva.start ? local(eva.start, 0, s.origin.lon) : "—"} detail={eva.start ? `local solar time${eva.auto ? " (auto: after sunrise)" : ""}` : now === null ? "calculating…" : "no daylight (polar night)"} />
         <Stat label="Back at base" value={eva.start ? local(eva.start, m.duration_hours, s.origin.lon) : "—"} detail={eva.fitsDaylight === null ? "" : eva.fitsDaylight ? "within daylight" : "after sunset — adjust start"} tone={eva.fitsDaylight === false ? "bad" : eva.fitsDaylight ? "ok" : undefined} />
         <Stat label="Margin at return" value={`${fmt(m.limiting_margin_percent)}%`} detail={`limited by ${factor(m.limiting_factor).toLowerCase()} (model)`} tone={m.feasible_within_model ? "ok" : "bad"} />
       </div>

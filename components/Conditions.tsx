@@ -8,10 +8,13 @@ import { fmt } from "@/lib/format";
 import type { SpaceWeather, SurfaceImages } from "@/lib/types";
 import { Badge, Loading, Panel, Stat } from "./ui";
 
-/** Current time, refreshed every minute (keeps local solar time readouts alive without re-rendering every frame). */
-export function useNow(stepMs = 60000) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), stepMs); return () => clearInterval(t); }, [stepMs]);
+/**
+ * Current time, refreshed every minute. Null until mounted in the browser: reading the clock during rendering would make the
+ * pre-rendered HTML (build/server time) differ from the client and break hydration.
+ */
+export function useNow(stepMs = 60000): number | null {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => { setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), stepMs); return () => clearInterval(t); }, [stepMs]);
   return now;
 }
 
@@ -22,12 +25,13 @@ const fmtUtc = (d: Date) => `${d.toISOString().slice(0, 16).replace("T", " ")} U
 export type EvaPlan = { start: Date | null; auto: boolean; end: Date | null; sunrise: Date | null; sunset: Date | null; polar: "day" | "night" | null; fitsDaylight: boolean | null };
 
 /** EVA timing for the current mission: start (automatic or chosen), end from the modelled duration, and the daylight window. */
-export function useEvaPlan(now: number): EvaPlan {
+export function useEvaPlan(now: number | null): EvaPlan {
   const s = useMissionStore();
   const rec = s.alternatives?.routes.find(r => r.strategy === s.alternatives?.recommended) ?? s.alternatives?.routes[0];
   return useMemo(() => {
     const { lat, lon } = s.origin;
-    const start = s.evaStartUtc !== null ? new Date(s.evaStartUtc) : suggestedEvaStart(new Date(now), lat, lon);
+    if (now === null && s.evaStartUtc === null) return { start: null, auto: true, end: null, sunrise: null, sunset: null, polar: null, fitsDaylight: null };   // clock not read yet
+    const start = s.evaStartUtc !== null ? new Date(s.evaStartUtc) : suggestedEvaStart(new Date(now!), lat, lon);
     if (!start) return { start: null, auto: s.evaStartUtc === null, end: null, sunrise: null, sunset: null, polar: "night", fitsDaylight: false };
     const w = daylightAround(start, lat, lon);
     const hours = rec?.mission.duration_hours ?? null;
@@ -41,11 +45,12 @@ export function useEvaPlan(now: number): EvaPlan {
 /** Season, local solar time, Sun and the EVA daylight check at the base (Mars24 calculation, class B). */
 export function SiteConditions() {
   const s = useMissionStore(); const now = useNow();
+  const eva = useEvaPlan(now);
+  if (now === null) return <Panel title="Conditions at the base" tour="conditions"><Loading label="Calculating season and daylight at the base…" /></Panel>;
   const { lat, lon } = s.origin;
   const t = marsTime(new Date(now));
   const season = seasonOf(t.ls, lat);
   const el = solarElevation(new Date(now), lat, lon);
-  const eva = useEvaPlan(now);
   return (
     <Panel title="Conditions at the base" tour="conditions" right={<Badge tone="info" title="Mars24 algorithm (Allison & McEwen 2000, NASA GISS)">class B · calculated</Badge>}>
       <div className="kpis compact">
