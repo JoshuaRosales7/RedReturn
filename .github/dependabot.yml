@@ -5,6 +5,13 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    groups:
+      # react and react-dom must always have the exact same version (Next.js fails the build otherwise)
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      # three.js and its React bindings move together
+      three:
+        patterns: ["three", "@types/three", "@react-three/*"]
   - package-ecosystem: pip
     directory: /api
     schedule:
