@@ -6,4 +6,4 @@ rasterio==1.5.2
 httpx==0.28.1
 pytest==9.2.0
 # optional language-model paraphrase layer (never supplies numbers); only used when OPENAI_API_KEY and OPENAI_MODEL are set server-side
-openai>=2.8.0,<3
+openai>=3.49.0,<4
