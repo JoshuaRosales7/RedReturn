@@ -3,7 +3,7 @@
   Deploy the RedReturn API to Google Cloud Run (scales to zero; fast cold start with CPU boost).
 
 .EXAMPLE
-  .\scripts\deploy_cloud_run.ps1 -ProjectId my-project-123 -WebOrigin https://redreturn.vercel.app -AllowVercelPreviews
+  .\scripts\deploy_cloud_run.ps1 -ProjectId my-project-123 -WebOrigin https://redreturn.vercel.app -AllowVercelPreviews -AllowNetlifyPreviews
 
 .NOTES
   Requires the Google Cloud CLI (gcloud), `gcloud auth login`, and billing enabled on the project
@@ -14,7 +14,8 @@ param(
   [Parameter(Mandatory = $true)][string]$ProjectId,
   [Parameter(Mandatory = $true)][string]$WebOrigin,      # your Vercel URL, e.g. https://redreturn.vercel.app
   [string]$Region = "us-central1",
-  [switch]$AllowVercelPreviews                           # also accept https://*.vercel.app preview URLs
+  [switch]$AllowVercelPreviews,                          # also accept https://*.vercel.app (production and previews)
+  [switch]$AllowNetlifyPreviews                          # also accept https://*.netlify.app (production and deploy previews)
 )
 # gcloud prints progress on stderr; through gcloud.ps1 PowerShell turns that into error records, so "Stop" would abort
 # on normal output. Failures are detected from $LASTEXITCODE instead (see Step).
@@ -45,7 +46,10 @@ Step "Build the API image with Cloud Build (3-8 min the first time)" { gcloud bu
 # Environment variables go through a YAML file: gcloud on Windows runs via cmd.exe, which mangles ^ and , in arguments.
 $EnvFile = Join-Path ([System.IO.Path]::GetTempPath()) "redreturn-env.yaml"
 $Lines = @("REDRETURN_CORS_ORIGINS: '$WebOrigin'")
-if ($AllowVercelPreviews) { $Lines += "REDRETURN_CORS_ORIGIN_REGEX: 'https://.*\.vercel\.app'" }
+$Patterns = @()
+if ($AllowVercelPreviews) { $Patterns += 'https://.*\.vercel\.app' }
+if ($AllowNetlifyPreviews) { $Patterns += 'https://.*\.netlify\.app' }
+if ($Patterns.Count) { $Lines += "REDRETURN_CORS_ORIGIN_REGEX: '" + ($Patterns -join "|") + "'" }
 Set-Content -Path $EnvFile -Value $Lines -Encoding ascii
 
 Step "Deploy to Cloud Run ($Service, $Region)" {

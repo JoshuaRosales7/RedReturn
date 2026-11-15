@@ -1,0 +1,10 @@
+# Netlify: the web app is a static export (next.config.ts output: "export"), published from out/.
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Public API address baked into the page at build time (Google Cloud Run deployment).
+  NEXT_PUBLIC_API_URL = "https://redreturn-api-113287289372.us-central1.run.app"
