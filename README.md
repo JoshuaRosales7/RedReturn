@@ -67,6 +67,8 @@ Visual texture is not elevation · nodata stays missing · interpolated values a
 ## Deploy
 Static web: any static host (`out/`), e.g. Vercel; set `NEXT_PUBLIC_API_URL` to the API URL **before** building. API: `api/Dockerfile` (listens on `$PORT`, default 8000) via `railway.toml` (Railway), `render.yaml` (Render) or any Docker host; set `REDRETURN_CORS_ORIGINS` to the web origin and, optionally, `REDRETURN_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` for Vercel preview URLs. No secrets are needed for the demo; no promotional cloud credits are used.
 
+**Google Cloud Run** (scales to zero, fast cold start): install the Google Cloud CLI, `gcloud auth login`, enable billing on a project, then run `.\scripts\deploy_cloud_run.ps1 -ProjectId <project> -WebOrigin https://<your-site>.vercel.app -AllowVercelPreviews`. It builds `api/Dockerfile` with Cloud Build (`cloudbuild.api.yaml`; `.gcloudignore` uploads only `api/`) and deploys with 1 GiB, CPU boost, 0–2 instances and a 300 s timeout. Re-run it to ship a new version.
+
 ## Docs
 [AUDIT_2026](docs/AUDIT_2026.md) · [CHALLENGE_ALIGNMENT](docs/CHALLENGE_ALIGNMENT.md) · [DATA_PROVENANCE](docs/DATA_PROVENANCE.md) · [SCIENTIFIC_VALIDATION](docs/SCIENTIFIC_VALIDATION.md) · [ARCHITECTURE](docs/ARCHITECTURE.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [JUDGING_EVIDENCE](docs/JUDGING_EVIDENCE.md) · [GLOBAL_OFFERS](docs/GLOBAL_OFFERS.md) · [VERIFICATION](docs/VERIFICATION.md) · [VALIDATION_RESULTS](docs/VALIDATION_RESULTS.md) · [RELEASE_READINESS](docs/RELEASE_READINESS.md) · [COMPLIANCE](docs/COMPLIANCE.md) · [SUBMISSION_PACK](docs/SUBMISSION_PACK.md) · [REFERENCES](docs/REFERENCES.md) · [SI_USE](docs/SI_USE.md) · [FINAL_REPORT](docs/FINAL_REPORT.md)
 

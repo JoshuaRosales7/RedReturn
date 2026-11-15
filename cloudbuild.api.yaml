@@ -1,0 +1,14 @@
+# Google Cloud Build: builds the API image from api/Dockerfile (the root Dockerfile is the static web app)
+# and pushes it to Artifact Registry. Deployment to Cloud Run is done by scripts/deploy_cloud_run.ps1.
+#   gcloud builds submit --config cloudbuild.api.yaml --substitutions=_REGION=us-central1 .
+substitutions:
+  _REGION: us-central1
+  _REPO: redreturn
+  _SERVICE: redreturn-api
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "api/Dockerfile", "-t", "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest", "."]
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest"
+options:
+  logging: CLOUD_LOGGING_ONLY

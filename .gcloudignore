@@ -1,0 +1,7 @@
+# Upload only what the API image needs (gcloud builds submit). Everything else stays local.
+/*
+!/api/
+!/cloudbuild.api.yaml
+api/**/__pycache__/
+api/.pytest_cache/
+api/data/dem/ondemand/
