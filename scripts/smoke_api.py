@@ -77,8 +77,12 @@ check("alternatives: too far → 422 grid_too_large", "POST", "/api/routes/alter
 check("long-range: Jezero → Gale", "POST", "/api/routes/long-range",
       body={"origin": {"lat": 18.38, "lon": 77.58}, "destination": {"lat": -5.4, "lon": 137.8}},
       test=lambda j, r: f"{j['grid']['spacing_m'] / 1000:.1f} km grid, {[round(x['metrics']['distance_km']) for x in j['routes']]} km")
-check("long-range across 180° → 422", "POST", "/api/routes/long-range", expect=422,
-      body={"origin": {"lat": 0, "lon": 175}, "destination": {"lat": 0, "lon": -175}}, test=lambda j, r: j["error"]["code"])
+check("long-range Olympus → Jezero (opposite sides of 180°)", "POST", "/api/routes/long-range",
+      body={"origin": {"lat": 18.65, "lon": -133.8}, "destination": {"lat": 18.38, "lon": 77.58}},
+      test=lambda j, r: f"{[x['strategy'] for x in j['routes']]}, {round(j['routes'][0]['metrics']['distance_km'])} km the long way round")
+check("far science stop → 422 stop_outside_area", "POST", "/api/routes/alternatives", expect=422,
+      body={"origin": {"lat": 18.65, "lon": -133.8}, "destination": {"lat": 18.9, "lon": -133.5},
+            "science_stops": [{"name": "Old Jezero stop", "lat": 18.5, "lon": 77.38, "dwell_hours": 0.75}]}, test=lambda j, r: j["error"]["code"])
 check("legacy plan", "POST", "/api/routes/plan", body={"origin": {"lat": 18.38, "lon": 77.58}, "destination": {"lat": 18.6, "lon": 77.2}}, test=has("distance_km"))
 check("legacy compare", "POST", "/api/routes/compare", body={"origin": {"lat": 18.38, "lon": 77.58}, "destination": {"lat": 18.6, "lon": 77.2}})
 

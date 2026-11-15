@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diagnoseCoverage, fmtBounds, routeReach, routeSpanDeg, windowFor } from "../lib/coverage";
+import { bringWithinLocal, diagnoseCoverage, fmtBounds, localArea, localAreaKm, routeReach, routeSpanDeg, windowFor } from "../lib/coverage";
 import { toErr, workingStrategy } from "../lib/store";
 import { ApiFailure } from "../lib/api";
 import type { Alternatives, Coverage } from "../lib/types";
@@ -54,5 +54,26 @@ describe("Route reach (base–target distance limit)", () => {
     expect(routeSpanDeg({ lat: 0, lon: 179 }, { lat: 0, lon: -179 })).toBe(358);       // the API refuses routes across 180°
     expect(routeReach({ lat: 10, lon: 10 }, { lat: 12.9, lon: 12.9 }).local).toBe(true);
     expect(routeReach({ lat: 10, lon: 10 }, { lat: 13.1, lon: 10 }).local).toBe(false);
+  });
+});
+
+describe("Local analysis area", () => {
+  it("is ±3° around the base, narrower in km away from the equator", () => {
+    const a = localArea({ lat: -34.18, lon: 41.99 });
+    expect(a.lat_max - a.lat_min).toBeCloseTo(6, 9);
+    expect(localAreaKm(-34.18).ew).toBeLessThan(localAreaKm(0).ew);
+    expect(Math.round(localAreaKm(-34.18).ew)).toBe(147);
+  });
+  it("brings a too-far target straight toward the base, just inside the area", () => {
+    const base = { lat: -34.1807, lon: 41.9937 }, target = { lat: -33.0161, lon: 37.4374 };   // the 235 km case (4.6° in longitude)
+    expect(routeReach(base, target).local).toBe(false);
+    const t = bringWithinLocal(base, target);
+    expect(routeReach(base, t).local).toBe(true);
+    expect(routeSpanDeg(base, t)).toBeCloseTo(2.94, 6);
+    expect(Math.sign(t.lon - base.lon)).toBe(Math.sign(target.lon - base.lon));               // same direction
+  });
+  it("leaves a target already inside untouched", () => {
+    const t = { lat: 18.6, lon: 77.2 };
+    expect(bringWithinLocal({ lat: 18.38, lon: 77.58 }, t)).toBe(t);
   });
 });

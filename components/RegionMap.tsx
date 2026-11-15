@@ -13,9 +13,11 @@ export type MapFocus = { lat: number; lon: number; z?: number; key: number };
  * Zoomable close-up map (NASA Mars Trek equirectangular tiles). Drag to pan, wheel / buttons / +− keys to zoom,
  * arrow keys to pan, click to place the selected point. Imagery only: nothing here is read back as elevation.
  */
-export function RegionMap({ layer, origin, destination, coverage, onPick, focus, route, selection }: {
+export function RegionMap({ layer, origin, destination, coverage, onPick, focus, route, selection, localBox }: {
   layer: LayerId; origin: Point; destination: Point; coverage: Coverage[]; onPick: (p: Point) => void;
   focus: MapFocus | null; route?: { lat: number; lon: number }[]; selection: "origin" | "destination";
+  /** Local analysis area around the base (targets inside get the detailed 463 m analysis). */
+  localBox?: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(0); const H = Math.round(clamp(W * 0.62, 280, 420));
@@ -116,6 +118,10 @@ export function RegionMap({ layer, origin, destination, coverage, onPick, focus,
         {tileFail.key === `${layer}/${tz}` && tileFail.n > 0 && <div className="rm-offline" role="status">NASA Trek imagery is not responding right now ({tileFail.n} tile{tileFail.n > 1 ? "s" : ""} failed). Clicks, coordinates, routes and the MOLA terrain analysis still work.</div>}
         {measured && <svg width={W} height={H} className="rm-overlay" aria-hidden>
           {coverage.map(c => { const [x0, y0] = px({ lat: c.bounds.lat_max, lon: c.bounds.lon_min }); const w = (c.bounds.lon_max - c.bounds.lon_min) * ppd, h = (c.bounds.lat_max - c.bounds.lat_min) * ppd; return <rect key={c.id} x={x0} y={y0} width={w} height={h} fill="rgba(98,184,164,.1)" stroke="#62b8a4" strokeWidth={1.5} strokeDasharray="5 4" />; })}
+          {localBox && (() => { const [x0, y0] = px({ lat: localBox.lat_max, lon: localBox.lon_min }); const w = (localBox.lon_max - localBox.lon_min) * ppd, h = (localBox.lat_max - localBox.lat_min) * ppd; return <g>
+            <rect x={x0} y={y0} width={w} height={h} fill="none" stroke="#fff" strokeOpacity={.85} strokeWidth={1.5} strokeDasharray="8 6" />
+            <text x={Math.min(Math.max(x0 + 6, 6), W - 260)} y={Math.min(Math.max(y0 + 16, 16), H - 40)} fill="#fff" fontSize={11} fontWeight={600} stroke="#000" strokeWidth={3} paintOrder="stroke">Local analysis area (±3° around the base)</text>
+          </g>; })()}
           <path d={line(gc)} fill="none" stroke="#0a0d11" strokeWidth={4} opacity={.5} />
           <path d={line(gc)} fill="none" stroke="#e8794a" strokeWidth={1.8} strokeDasharray={route ? "5 5" : undefined} />
           {route && route.length > 1 && <><path d={line(route)} fill="none" stroke="#0a0d11" strokeWidth={6} opacity={.55} strokeLinejoin="round" /><path d={line(route)} fill="none" stroke="#6fb7a7" strokeWidth={3} strokeLinejoin="round" /></>}
@@ -130,7 +136,7 @@ export function RegionMap({ layer, origin, destination, coverage, onPick, focus,
         <div className="rm-scale" aria-hidden><i style={{ width: scaleKm.w }} /><span>{scaleKm.km.toLocaleString("en-US")} km</span></div>
         {z > maxZoom(layer) && <div className="rm-note" aria-hidden>Imagery magnified beyond its finest level</div>}
       </div>
-      <div className="mapbar"><span className="tiny muted">Close-up · zoom {z} · click places the <b>{selection === "origin" ? "base" : "target"}</b> · drag to pan · NASA Mars Trek imagery (orientation only, never used as elevation){route ? " · green = planned route" : ""}</span></div>
+      <div className="mapbar"><span className="tiny muted">Close-up · zoom {z} · click places the <b>{selection === "origin" ? "base" : "target"}</b> · drag to pan · NASA Mars Trek imagery (orientation only, never used as elevation){route ? " · green = planned route" : ""}{localBox ? " · dashed box = local analysis area" : ""}</span></div>
     </div>
   );
 }

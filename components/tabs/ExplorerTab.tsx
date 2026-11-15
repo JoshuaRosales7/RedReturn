@@ -5,7 +5,7 @@ import { CATALOG, LAYERS } from "@/data/catalog";
 import { useMissionStore } from "@/lib/store";
 import { coord } from "@/lib/format";
 import { normalizeLon } from "@/lib/mars";
-import { diagnoseCoverage, fmtBounds, routeReach, windowFor } from "@/lib/coverage";
+import { bringWithinLocal, diagnoseCoverage, fmtBounds, localArea, localAreaKm, MAX_ROUTE_SPAN_DEG, routeReach, routeSpanDeg, windowFor } from "@/lib/coverage";
 import type { Point } from "@/lib/types";
 import { CheckCircle2, Globe2, Ruler, RotateCcw, TriangleAlert } from "lucide-react";
 import { Badge, Loading, NextStep, NumField, PageHead, Panel } from "../ui";
@@ -34,7 +34,7 @@ export function ExplorerTab() {
   const km = reach.km < 10 ? reach.km.toFixed(1) : Math.round(reach.km).toLocaleString("en-US");
   return (
     <div className="stack" style={{ gap: 12 }}>
-    <PageHead icon={Globe2} title="Mars Explorer">Choose where the crew starts (base) and where it goes (target) — anywhere on Mars, at any distance. Up to ~150 km apart you get the detailed local analysis; farther apart, a long-range overview route. Zoom the close-up map to place points precisely.</PageHead>
+    <PageHead icon={Globe2} title="Mars Explorer">Choose where the crew starts (base) and where it goes (target) — anywhere on Mars, at any distance. A target inside the dashed box around the base (3° of latitude and longitude, roughly 150–180 km) gets the detailed local analysis; farther away, a long-range overview route. Zoom the close-up map to place points precisely.</PageHead>
     <div className="dash">
       <div className="col c4 side-sticky">
         <Panel title="Select points" tour="points">
@@ -54,8 +54,15 @@ export function ExplorerTab() {
             <Ruler size={15} aria-hidden />
             {reach.local
               ? <div><b>Distance {km} km</b> · local excursion: detailed analysis on the 463 m MOLA grid, with Risk Lab, Emergency and ARES.</div>
-              : <div><b>Distance {km} km</b> · long-range route: an overview on a sampled MOLA grid with travel and supply estimates. Risk Lab, Emergency and ARES need points within ~150 km.</div>}
+              : <div><b>Distance {km} km</b> · long-range route: an overview on a sampled MOLA grid with travel and supply estimates. Risk Lab, Emergency and ARES need a local excursion.</div>}
           </div>
+          {!reach.local && (() => {
+            const a = localAreaKm(s.origin.lat), dLat = Math.abs(s.destination.lat - s.origin.lat), dLon = routeSpanDeg({ lat: 0, lon: s.origin.lon }, { lat: 0, lon: s.destination.lon });
+            return <div className="small muted" style={{ display: "grid", gap: 6 }}>
+              <span>The detailed analysis needs the target within <b>{MAX_ROUTE_SPAN_DEG}° of latitude and {MAX_ROUTE_SPAN_DEG}° of longitude</b> of the base — here about {Math.round(a.ns)} km north–south and {Math.round(a.ew)} km east–west (the dashed box on the close-up map). Your target is {dLat.toFixed(1)}° in latitude and {dLon.toFixed(1)}° in longitude away.</span>
+              {dLat < 25 && dLon < 25 && <button className="btn sm" style={{ justifySelf: "start" }} onClick={() => s.setDestination({ ...bringWithinLocal(s.origin, s.destination), name: "Target moved inside the local area" })}>Bring the target inside the local area</button>}
+            </div>;
+          })()}
           {s.stopsNotice && <p className="small" style={{ color: "var(--warn)", margin: 0 }} role="status">{s.stopsNotice}</p>}
           {reach.local && cover.length > 0 && (diag.ok
             ? <p className="small row" style={{ flexWrap: "nowrap", color: "var(--ok)" }} role="status"><CheckCircle2 size={15} aria-hidden style={{ flex: "none" }} />Both points are in the {diag.window.name} — elevations are ready.</p>
@@ -92,7 +99,7 @@ export function ExplorerTab() {
       </div>
       <div className="col c8">
         <h2 className="section-title">Close-up map</h2>
-        <RegionMap layer={s.layer} origin={s.origin} destination={s.destination} coverage={cover} onPick={pick} focus={mapFocus} route={planned} selection={s.selection} />
+        <RegionMap layer={s.layer} origin={s.origin} destination={s.destination} coverage={cover} onPick={pick} focus={mapFocus} route={planned} selection={s.selection} localBox={localArea(s.origin)} />
         <h2 className="section-title">3D globe</h2>
         <Globe layer={s.layer} origin={s.origin} destination={s.destination} focus={focus} onPick={pick} coverage={cover} />
         <p className="tiny dim">Click the close-up map or the globe to move the {s.selection === "origin" ? "base" : "target"} (keyboard users: type coordinates on the left, or focus the close-up and use arrows and +/−). Both share the same base, target and imagery layer; green outlines are stored elevation areas.</p>

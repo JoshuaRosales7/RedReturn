@@ -38,3 +38,25 @@ export function routeReach(a: Point, b: Point): Reach {
   const spanDeg = routeSpanDeg(a, b);
   return { km: greatCircleDistance(a, b), spanDeg, local: Number.isFinite(spanDeg) && spanDeg <= MAX_ROUTE_SPAN_DEG };
 }
+
+/** The local analysis area around a base: ±MAX_ROUTE_SPAN_DEG in latitude and longitude (the exact rule used by the API). */
+export function localArea(base: Pick<Point, "lat" | "lon">) {
+  const lon = normalizeLon(base.lon);
+  return { lat_min: Math.max(-90, base.lat - MAX_ROUTE_SPAN_DEG), lat_max: Math.min(90, base.lat + MAX_ROUTE_SPAN_DEG), lon_min: lon - MAX_ROUTE_SPAN_DEG, lon_max: lon + MAX_ROUTE_SPAN_DEG };
+}
+
+/** Kilometres covered by the 3° rule at a latitude: north-south and east-west. */
+export function localAreaKm(lat: number) {
+  const kmPerDeg = 59.27;                                   // Mars, R = 3396.19 km
+  return { ns: MAX_ROUTE_SPAN_DEG * kmPerDeg, ew: MAX_ROUTE_SPAN_DEG * kmPerDeg * Math.max(0.01, Math.cos((lat * Math.PI) / 180)) };
+}
+
+/** The target moved straight toward the base just enough to fall inside the local area (2% margin); unchanged if already inside. */
+export function bringWithinLocal(base: Point, target: Point): Point {
+  const dLat = target.lat - base.lat, dLon = normalizeLon(target.lon - base.lon);
+  const span = Math.max(Math.abs(dLat), Math.abs(dLon));
+  const limit = MAX_ROUTE_SPAN_DEG * 0.98;
+  if (span <= limit) return target;
+  const k = limit / span;
+  return { lat: +(base.lat + dLat * k).toFixed(4), lon: +normalizeLon(base.lon + dLon * k).toFixed(4) };
+}
