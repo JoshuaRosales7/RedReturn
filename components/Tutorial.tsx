@@ -1,5 +1,5 @@
 "use client";
-import { Activity, ArrowLeft, ArrowRight, BookOpen, Bot, CheckCircle2, FileText, Globe2, LayoutDashboard, Mountain, Route, ShieldAlert, Siren, Signal, X, type LucideIcon } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, BookOpen, Bot, CheckCircle2, Compass, FileText, Globe2, LayoutDashboard, Mountain, Route, ShieldAlert, Siren, Signal, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Tab } from "@/lib/store";
 import { term } from "@/lib/glossary";
@@ -15,7 +15,7 @@ const STEPS: Step[] = [
   { tab: null, icon: LayoutDashboard, title: "Welcome to RedReturn", body: "" },
   { tab: "overview", icon: LayoutDashboard, title: "1 · Overview", target: "flow",
     body: "Your mission on one screen: the recommended route, how much margin the crew has to get back, and which checks are still pending.",
-    actions: ["Follow the mission steps from left to right.", "“Reload Jezero demo” brings back the example mission at any time."], termId: "margin" },
+    actions: ["Follow the mission steps from left to right.", "“Conditions at the base” shows the season, sunrise, sunset and whether your EVA fits in daylight; “Space weather” lists recent NASA solar-activity alerts.", "“Reload Jezero demo” brings back the example mission at any time."], termId: "margin" },
   { tab: "explorer", icon: Globe2, title: "2 · Mars Explorer", target: "points",
     body: "Choose where the crew starts (the base) and where it goes (the target). Click the close-up or world map, type coordinates, or pick a named place.",
     actions: ["Use the Base / Target switch to decide what a click moves; zoom the close-up map to place points precisely.", "Up to ~150 km apart you get the full analysis; farther apart, a long-range overview route."], termId: "mola" },
@@ -37,6 +37,9 @@ const STEPS: Step[] = [
   { tab: "reports", icon: FileText, title: "8 · Reports", target: "export",
     body: "Download the analysis as PDF, as JSON with everything needed to reproduce it, or as GeoJSON routes for map software. You can also see every data source.",
     termId: "classes" },
+  { tab: "field", icon: Compass, title: "9 · Field card", target: "fieldcard",
+    body: "The plan as the crew would carry it: each leg with its bearing, distance, climb, local arrival time and oxygen left. Print it, or open Visor mode for a large heads-up view of one leg at a time.",
+    actions: ["Change the EVA start time in Overview to see arrival times move.", "Visor mode is a planning preview: there is no live position."], termId: "ltst" },
   { tab: null, icon: Signal, title: "Status at the top", target: "status",
     body: "The top bar tells you if live calculations are available. “API offline” means only the saved demo can be shown — click it to reconnect.",
     termId: "snapshot" },

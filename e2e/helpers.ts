@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 export const API = process.env.E2E_API_URL || "http://localhost:8000";
-export const TAB_KEYS = { overview: "1", explorer: "2", terrain: "3", planner: "4", risk: "5", emergency: "6", ares: "7", reports: "8" } as const;
+export const TAB_KEYS = { overview: "1", explorer: "2", terrain: "3", planner: "4", risk: "5", emergency: "6", ares: "7", reports: "8", field: "9" } as const;
 
 /** Open the app and wait until the demo has been loaded and planned. */
 export async function openApp(page: Page, opts: { offline?: boolean; tour?: boolean } = {}) {

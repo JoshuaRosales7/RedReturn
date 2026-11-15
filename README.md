@@ -22,6 +22,8 @@ Educational research prototype. **Not operational guidance; never certifies a ro
 
 First visit opens a plain-language guided tour (replay with **?**); a **Glossary** explains every term; the Overview shows mission progress step by step. The address bar always holds the current mission (base, target, stops, changed settings) — **Copy mission link** shares or bookmarks it. If the API is unreachable, only the Jezero demo is shown, from a labelled precomputed snapshot.
 
+**Site conditions and field use.** *Conditions at the base* (Overview) computes the season (solar longitude Ls, Mars Year), local true solar time, Sun elevation, sunrise/sunset and whether the planned EVA fits in daylight with NASA GISS's **Mars24** algorithm (Allison & McEwen 2000), and flags the dust-storm season (Ls 180°–360°). *Space weather* lists recent **NASA CCMC DONKI** notifications (flares, solar energetic particles, CMEs, interplanetary shocks; Earth-only alerts are filtered out) and flags those that name Mars — context only, never an input to the dose model. *Ground view* (Terrain) shows the latest raw images from **Perseverance** (Jezero) or **Curiosity** (Gale) when the base is in their region, labelled as regional context, not waypoint photos. The **Field card** tab turns the working route into legs with bearing, distance, climb, local arrival time and oxygen left, prints as a cue card, and has a high-contrast **Visor mode** (heads-up style, planning preview without live position). Set `NASA_API_KEY` on the API (free at api.nasa.gov) to avoid the shared `DEMO_KEY` rate limit; responses are cached 3–6 h.
+
 ## Quick start
 ```bash
 # API (Python 3.12)

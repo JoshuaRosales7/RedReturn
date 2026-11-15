@@ -8,6 +8,7 @@ import { PlanStatus } from "../PlanStatus";
 import { LongRangeSummary } from "../LongRange";
 import { MissionFlow } from "../MissionFlow";
 import { ShareButton } from "../ShareButton";
+import { SiteConditions, SpaceWeatherPanel } from "../Conditions";
 
 function Check({ ok, warn, children }: { ok: boolean; warn?: boolean; children: React.ReactNode }) {
   const I = ok ? CheckCircle2 : warn ? CircleAlert : XCircle;
@@ -32,6 +33,7 @@ export function OverviewTab() {
         <Stat label="Terrain resolution" value={`${fmt(alt.resolution.pixel_size_m, 0)} m`} detail="hazards < ~1 km unresolved" tone="warn" />
         <Stat label="Data gaps on route" value={rec ? rec.metrics.nodata_samples + rec.metrics.outside_coverage_samples : "—"} detail={`${rec ? rec.metrics.interpolated_samples : "—"} interpolated samples`} />
       </div>}
+      <div className="grid g2"><SiteConditions /><SpaceWeatherPanel /></div>
       <Panel title="Mission">
         <div className="grid g2">
           <div className="stack">

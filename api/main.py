@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import errors, limits
 from .models.schemas import Coordinate  # noqa: F401  (re-export, backward compatible)
-from .routers import ares, mission, routes, system, terrain
+from .routers import ares, conditions, mission, routes, system, terrain
 from .scientific.geodesy import MARS_RADIUS_KM, haversine_km, normalize_lon  # noqa: F401
 from .scientific.legacy import astar  # noqa: F401
 
@@ -25,7 +25,7 @@ limits.install(app)   # added first => inner; CORS is added last => outermost, s
 origin_regex = os.getenv("REDRETURN_CORS_ORIGIN_REGEX") or None
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_origin_regex=origin_regex, allow_methods=["GET", "POST"], allow_headers=["Content-Type"], max_age=600)
 errors.install(app)
-for r in (system.router, terrain.router, routes.router, mission.router, ares.router):
+for r in (system.router, terrain.router, routes.router, mission.router, ares.router, conditions.router):
     app.include_router(r)
 
 

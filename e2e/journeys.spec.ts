@@ -6,7 +6,7 @@ test.describe("Live stack (web + API)", () => {
   test("1. opens the dashboard", async ({ page }) => {
     await openApp(page);
     await expect(page).toHaveTitle(/RedReturn/);
-    await expect(page.getByRole("tab")).toHaveCount(8);   // desktop nav visible; the mobile bottom nav is hidden by CSS
+    await expect(page.getByRole("tab")).toHaveCount(9);   // desktop nav visible; the mobile bottom nav is hidden by CSS
     await expect(page.locator(".legal")).toContainText("Not operational guidance");
     await expect(page.locator(".stat", { hasText: "Terrain resolution" })).toContainText("463 m");
     await expect(page.getByText("not certifiable").first()).toBeVisible();
@@ -251,7 +251,7 @@ test.describe("Onboarding", () => {
     await expect(dlg).toContainText("Key idea");
     await dlg.getByRole("button", { name: "Next" }).click();
     await expect(page.locator('[data-tour="points"].tour-target')).toBeVisible();          // Explorer: point selection highlighted
-    for (let k = 0; k < 8; k++) await page.keyboard.press("ArrowRight");
+    for (let k = 0; k < 9; k++) await page.keyboard.press("ArrowRight");
     await expect(dlg).toContainText("You're ready");
     await expect(dlg).toContainText("Pick a base and a target in Mars Explorer");
     await dlg.getByRole("button", { name: "Open glossary" }).click();
@@ -350,5 +350,47 @@ test.describe("3D globe", () => {
     const lat = Number(await page.getByLabel("Target latitude").inputValue()), lon = Number(await page.getByLabel("Target longitude").inputValue());
     expect(Math.abs(lat - 18.38)).toBeLessThan(3);
     expect(Math.abs(lon - 77.58)).toBeLessThan(3);
+  });
+});
+
+test.describe("Challenge features: conditions, space weather, ground view, field card", () => {
+  const SW = { source: "NASA CCMC DONKI", window_days: 30, start: "2026-10-16", end: "2026-11-15", retrieved_at: "2026-11-15T00:00:00Z",
+    note: "Notifications never change a calculated number.", excluded_earth_only: [{ type: "RBE", label: "Earth radiation belt enhancement", count: 3 }],
+    items: [{ type: "CME", label: "Coronal mass ejection", issued: "2026-11-15T14:32Z", url: "https://ccmc.gsfc.nasa.gov/x", mentions_mars: true, summary: "CME with estimated impact at Mars." }] };
+  const PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+  const IMG = { rover: { id: "perseverance", name: "Perseverance", region: "Jezero crater", credit: "NASA/JPL-Caltech" }, distance_km: 9,
+    note: "Latest raw images … not at your waypoints.", images: [{ url: PIXEL, full_url: PIXEL, sol: 2024, camera: "Mcz Left", taken_utc: null, title: "Sol 2024: Mastcam-Z", credit: "NASA/JPL-Caltech/ASU", page: null }] };
+
+  test("Overview shows season, daylight and NASA space weather; Terrain shows rover images", async ({ page }) => {
+    await page.route(/\/api\/conditions\/space-weather/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(SW) }));
+    await page.route(/\/api\/conditions\/surface-images/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(IMG) }));
+    await openApp(page);
+    const cond = page.locator(".panel", { hasText: "Conditions at the base" });
+    await expect(cond).toContainText(/Ls \d+\.\d°/);
+    await expect(cond).toContainText(/Mars Year \d+/);
+    await expect(cond).toContainText(/Daylight|Polar/);
+    await expect(cond).toContainText(/daylight|outside daylight|Polar/);
+    await expect(page.locator(".panel", { hasText: "Space weather" })).toContainText("mentions Mars");
+    await expect(page.locator(".panel", { hasText: "Space weather" })).toContainText("Earth radiation belt enhancement");
+    await gotoTab(page, "terrain");
+    await expect(page.locator(".gallery img")).toHaveCount(1);
+    await expect(page.locator(".panel", { hasText: "Ground view from NASA rovers" })).toContainText("not at your waypoints");
+  });
+
+  test("field card lists legs and the visor steps through them", async ({ page }) => {
+    await openApp(page);
+    await gotoTab(page, "field");
+    const rows = page.locator("table.t", { hasText: "Bearing" }).locator("tbody tr");
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    expect(await rows.count()).toBeGreaterThan(3);
+    await expect(page.locator(".stat", { hasText: "Back at base" })).toBeVisible();
+    await page.getByRole("button", { name: "Visor mode" }).click();
+    const visor = page.getByRole("dialog", { name: /Visor view, leg 1 of/ });
+    await expect(visor).toBeVisible();
+    await expect(visor).toContainText("NO LIVE POSITION");
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("dialog", { name: /Visor view, leg 2 of/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: /Visor view/ })).toBeHidden();
   });
 });

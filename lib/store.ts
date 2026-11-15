@@ -8,7 +8,7 @@ import DEMO_SCENARIO from "../api/data/demo_scenario.json";
 import { decodeMission, encodeMission, type SharedMission } from "./share";
 import { routeReach } from "./coverage";
 
-export type Tab = "overview" | "explorer" | "terrain" | "planner" | "risk" | "emergency" | "ares" | "reports";
+export type Tab = "overview" | "explorer" | "terrain" | "planner" | "risk" | "emergency" | "ares" | "reports" | "field";
 export type Source = "live" | "snapshot";
 export type ResultKey = "alternatives" | "risk" | "scenario" | "heightfield" | "ares";
 /** A failed request: `code` is the API error code (e.g. outside_dem_coverage) or network/timeout. */
@@ -17,6 +17,8 @@ type Busy = { alt: boolean; risk: boolean; scenario: boolean; ares: boolean; hf:
 type Demo = Pick<Snapshot["demo"], "origin" | "destination" | "science_stops" | "config" | "incident" | "runs" | "seed">;
 
 type Store = {
+  /** EVA start (UTC ms); null = automatic (30 min after the next sunrise at the base). */
+  evaStartUtc: number | null; setEvaStart: (t: number | null) => void;
   tab: Tab; visited: Tab[]; origin: Point; destination: Point; stops: Stop[]; config: MissionConfig;
   /** Route the user picked as the working plan; null = follow the recommendation. */
   strategy: RouteStrategy | null;
@@ -153,6 +155,7 @@ export const useMissionStore = create<Store>((set, get) => {
   }
 
   return {
+    evaStartUtc: null, setEvaStart: evaStartUtc => set({ evaStartUtc }),
     tab: "overview", visited: ["overview"], origin: DEMO_FALLBACK.origin, destination: DEMO_FALLBACK.destination, stops: DEMO_FALLBACK.science_stops, config: DEFAULT_CONFIG, strategy: null,
     incidents: DEMO_FALLBACK.incident.kinds as Incident[], incidentProgress: DEMO_FALLBACK.incident.at_progress,
     layer: "colorshade", selection: "destination", apiState: "unknown", snapshot: null, coverage: [], coverageSource: null,

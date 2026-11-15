@@ -72,3 +72,9 @@ export type LongRange = {
     bounds: { lat_min: number; lat_max: number; lon_min: number; lon_max: number }; source: { dataset: string; range_read_url: string; etag: string | null } };
   routes: LongRoute[]; heightfield: Heightfield; limitations: string[]; certification: string;
 };
+export type SpaceWeather = { source: string; window_days: number; start: string; end: string; retrieved_at: string; note: string;
+  items: { type: string; label: string; issued: string | null; url: string | null; mentions_mars: boolean; summary: string }[];
+  excluded_earth_only: { type: string; label: string; count: number }[] };
+export type SurfaceImages = { rover: { id: string; name: string; region: string; credit: string } | null; distance_km?: number; note: string;
+  nearest?: { name: string; region: string; distance_km: number };
+  images: { url: string; full_url: string; sol: number; camera: string; taken_utc: string | null; title: string | null; credit: string; page: string | null }[] };

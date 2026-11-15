@@ -9,6 +9,7 @@ import { Mountain } from "lucide-react";
 import { Badge, ErrorState, Loading, NextStep, Notice, PageHead, Panel, SourceBadge, Stat } from "../ui";
 import { PlanStatus } from "../PlanStatus";
 import { LongRangeTerrain } from "../LongRange";
+import { GroundView } from "../Conditions";
 import { ProfileChart } from "../charts";
 import { TerrainMap } from "../TerrainMap";
 
@@ -86,6 +87,7 @@ export function TerrainTab() {
           <div className="c4"><Panel title="What this terrain data cannot tell you"><ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>{alt.limitations.map(l => <li key={l}>{l}</li>)}</ul></Panel></div>
         </>}
       </div>
+      {alt && <GroundView />}
       {alt && <NextStep detail="Seen where the routes climb? Compare time, energy and margins for each route." label="Compare routes in Planner" onClick={() => s.setTab("planner")} />}
     </div>
   );

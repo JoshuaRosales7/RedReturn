@@ -1,5 +1,5 @@
 "use client";
-import { Activity, BookOpen, Bot, Check, CircleHelp, FileText, Globe2, LayoutDashboard, Mountain, RefreshCw, Route, ShieldAlert, Siren } from "lucide-react";
+import { Activity, BookOpen, Bot, Check, CircleHelp, Compass, FileText, Globe2, LayoutDashboard, Mountain, RefreshCw, Route, ShieldAlert, Siren } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentType, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useMissionStore, type Tab } from "@/lib/store";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -15,6 +15,7 @@ import { RiskTab } from "./tabs/RiskTab";
 import { EmergencyTab } from "./tabs/EmergencyTab";
 import { AresTab } from "./tabs/AresTab";
 import { ReportsTab } from "./tabs/ReportsTab";
+import { FieldTab } from "./tabs/FieldTab";
 
 const TABS: { id: Tab; label: string; group: string; icon: ComponentType<{ size?: number }>; view: ComponentType }[] = [
   { id: "overview", label: "Overview", group: "Mission", icon: LayoutDashboard, view: OverviewTab },
@@ -25,6 +26,7 @@ const TABS: { id: Tab; label: string; group: string; icon: ComponentType<{ size?
   { id: "emergency", label: "Emergency", group: "Analysis", icon: Siren, view: EmergencyTab },
   { id: "ares", label: "ARES", group: "Analysis", icon: Bot, view: AresTab },
   { id: "reports", label: "Reports", group: "Output", icon: FileText, view: ReportsTab },
+  { id: "field", label: "Field card", group: "Output", icon: Compass, view: FieldTab },
 ];
 const GROUPS = ["Mission", "Analysis", "Output"];
 
@@ -43,7 +45,7 @@ export default function AppShell() {
     window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
   }, [setTab, tour, glossary]);
   useEffect(() => { if (!tourSeen()) setTour(true); }, []);
-  // Announce section changes for screen-reader users (keys 1–8 switch sections without moving focus).
+  // Announce section changes for screen-reader users (keys 1–9 switch sections without moving focus).
   const [announce, setAnnounce] = useState(""); const first = useRef(true);
   useEffect(() => { if (first.current) { first.current = false; return; } setAnnounce(`${TABS.find(t => t.id === tab)!.label} section`); }, [tab]);
   /** WAI-ARIA tabs: arrow keys / Home / End move between sections. */
