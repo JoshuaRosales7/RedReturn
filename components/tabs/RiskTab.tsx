@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Activity } from "lucide-react";
 import { useMissionStore, workingStrategy } from "@/lib/store";
 import { fmt, factor, STRATEGY_LABEL } from "@/lib/format";
-import { Badge, ErrorState, Loading, NextStep, Notice, PageHead, Panel, SourceBadge, Stat } from "../ui";
+import { Badge, ErrorState, Loading, NextStep, Notice, PageHead, Panel, SourceBadge, Spinner, Stat } from "../ui";
 import { PlanStatus } from "../PlanStatus";
 import { MarginHistogram, Tornado } from "../charts";
 
@@ -15,7 +15,7 @@ export function RiskTab() {
   const err = s.errors.risk;
   return (
     <div className="stack" style={{ gap: 12 }}>
-      <PageHead icon={Activity} title="Risk Lab" right={<div className="row"><SourceBadge source={r ? s.sources.risk : undefined} /><button className="btn primary" onClick={() => void s.runRisk()} disabled={s.busy.risk}>{s.busy.risk ? "Running…" : r ? "Re-run ensemble" : "Run ensemble"}</button></div>}>Seeded Monte Carlo: how much of the decision depends on uncertain inputs. Route analysed: <b>{STRATEGY_LABEL[strategy]}</b> ({picked ? "your selection in Planner" : alt.recommended ? "recommended" : "no route meets all constraints"}).</PageHead>
+      <PageHead icon={Activity} title="Risk Lab" right={<div className="row"><SourceBadge source={r ? s.sources.risk : undefined} /><button className="btn primary" onClick={() => void s.runRisk()} disabled={s.busy.risk}>{s.busy.risk ? <><Spinner />Running…</> : r ? "Re-run ensemble" : "Run ensemble"}</button></div>}>Seeded Monte Carlo: how much of the decision depends on uncertain inputs. Route analysed: <b>{STRATEGY_LABEL[strategy]}</b> ({picked ? "your selection in Planner" : alt.recommended ? "recommended" : "no route meets all constraints"}).</PageHead>
       <Notice><b>Hypothetical ensemble — not a survival probability.</b> The input spreads below are assumptions chosen to explore sensitivity. The output is the share of simulated scenarios that satisfy the modelled constraints, nothing more.</Notice>
       {s.busy.risk && !r && <Loading label="Running seeded Monte Carlo…" />}
       {err && !r && (err.offline

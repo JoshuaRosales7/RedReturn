@@ -3,7 +3,7 @@ import { Plus, Siren, Trash2 } from "lucide-react";
 import { useMissionStore, workingStrategy } from "@/lib/store";
 import { fmt, factor, STRATEGY_LABEL } from "@/lib/format";
 import type { IncidentKind } from "@/lib/types";
-import { Badge, Empty, ErrorState, Loading, NextStep, Notice, NumField, PageHead, Panel, Range, SourceBadge } from "../ui";
+import { Badge, Empty, ErrorState, Loading, NextStep, Notice, NumField, PageHead, Panel, Range, SourceBadge, Spinner } from "../ui";
 import { PlanStatus } from "../PlanStatus";
 
 const KINDS: { id: IncidentKind; label: string; unit: string; def: number; max: number }[] = [
@@ -38,7 +38,7 @@ export function EmergencyTab() {
               </div>
             </div>); })}
           <Range label="Occurs after outbound progress" value={Math.round(s.incidentProgress * 100)} min={0} max={100} step={5} unit="%" onChange={v => s.setIncidentProgress(v / 100)} />
-          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={() => void s.runScenario()} disabled={s.busy.scenario}>{s.busy.scenario ? "Recalculating…" : "2 · Simulate failure & replan"}</button>
+          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={() => void s.runScenario()} disabled={s.busy.scenario}>{s.busy.scenario ? <><Spinner />Recalculating…</> : "2 · Simulate failure & replan"}</button>
         </Panel>
         <Notice>Research and education decision-support prototype — <b>not operational emergency guidance</b>. Incident sizes are what-ifs with unknown likelihood.</Notice>
       </div>

@@ -11,7 +11,7 @@ import { ProfileChart } from "./charts";
 import { TerrainMap } from "./TerrainMap";
 import { GroundView } from "./Conditions";
 
-const Mesh = dynamic(() => import("./TerrainMesh3D"), { ssr: false, loading: () => <Loading label="Building 3D terrain…" /> });
+const Mesh = dynamic(() => import("./TerrainMesh3D"), { ssr: false, loading: () => <div className="mesh-ph"><Loading label="Building 3D terrain…" lines={0} /></div> });
 const kmFmt = (v: number) => Math.round(v).toLocaleString("en-US");
 const terrainRoute = (lr: LongRange) => lr.routes.find(r => r.strategy === "terrain") ?? lr.routes[0];
 

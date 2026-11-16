@@ -138,10 +138,15 @@ export default function AdvancedMarsGlobe({ layer, origin, destination, focus, o
     const io = new IntersectionObserver(([e]) => { setVisible(e.isIntersecting); if (e.isIntersecting) setMounted(true); }, { rootMargin: "120px" });
     io.observe(el); return () => io.disconnect();
   }, []);
+  // Fade the canvas in once the first texture is on the sphere (or after 8 s, so a slow Trek server never hides the globe).
+  const [late, setLate] = useState(false);
+  useEffect(() => { if (!mounted) return; const t = setTimeout(() => setLate(true), 8000); return () => clearTimeout(t); }, [mounted]);
+  const ready = level !== null || late || reduced;
   const top = Math.min(maxZoom(layer), small ? 2 : 3);
   const px = level === null ? null : 2 ** (level + 1) * 256;
-  return <div ref={box} className="globe" aria-label="Interactive 3D Mars globe. Drag to rotate, scroll to zoom, click the surface to set the selected point.">
+  return <div ref={box} className={`globe${ready ? " ready" : ""}`} aria-label="Interactive 3D Mars globe. Drag to rotate, scroll to zoom, click the surface to set the selected point.">
     <div className="overlay"><span className="chip pin-base">Base</span><span className="chip pin-target">Target</span><span className="chip">Drag to rotate · click to place the selected point</span></div>
+    {!ready && <div className="globe-ph" aria-hidden />}
     {mounted && level === null && <div className="empty" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }} role="status"><span className="spin" aria-hidden /><span className="small">Loading NASA Trek imagery…</span></div>}
     {level !== null && level < top && <div className="globe-hint" role="status"><span className="spin" aria-hidden />Loading sharper imagery…</div>}
     {px && <div className="globe-res" aria-hidden>{px.toLocaleString("en-US")} × {(px / 2).toLocaleString("en-US")} px texture · ≈ {Math.round(21344 / px)} km/px</div>}

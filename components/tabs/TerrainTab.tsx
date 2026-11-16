@@ -13,7 +13,7 @@ import { GroundView } from "../Conditions";
 import { ProfileChart } from "../charts";
 import { TerrainMap } from "../TerrainMap";
 
-const Mesh = dynamic(() => import("../TerrainMesh3D"), { ssr: false, loading: () => <Loading label="Building 3D terrain…" /> });
+const Mesh = dynamic(() => import("../TerrainMesh3D"), { ssr: false, loading: () => <div className="mesh-ph"><Loading label="Building 3D terrain…" lines={0} /></div> });
 const ALL = ["shortest", "terrain", "resource", "science"];
 
 export function TerrainTab() {

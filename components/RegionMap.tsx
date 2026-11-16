@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerE
 import { maxZoom, tileUrlZ, type LayerId } from "@/data/catalog";
 import { greatCircleDistance, interpolateGreatCircle, normalizeLon } from "@/lib/mars";
 import type { Coverage, Point } from "@/lib/types";
+import { revealImg } from "./ui";
 
 const MIN_Z = 1, MAX_Z = 8, KM_PER_DEG = 59.27;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -113,7 +114,7 @@ export function RegionMap({ layer, origin, destination, coverage, onPick, focus,
       <div ref={box} className="rm-stage" style={{ height: H }} tabIndex={0} role="application"
         aria-label={`Close-up map, about ${scaleKm.km} km per ${Math.round(scaleKm.w)} pixels. Drag or arrow keys to pan, plus and minus to zoom, click to place the ${selection === "origin" ? "base" : "target"}.`}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { drag.current = null; }} onKeyDown={key}>
-        {measured && tiles.map(t => <img key={t.key} src={t.src} alt="" draggable={false} className="rm-tile" style={{ left: t.x, top: t.y, width: T + 0.5, height: T + 0.5 }}
+        {measured && tiles.map(t => <img key={t.key} src={t.src} alt="" draggable={false} className="rm-tile" style={{ left: t.x, top: t.y, width: T + 0.5, height: T + 0.5 }} ref={revealImg.ref} onLoad={revealImg.onLoad}
           onError={() => setTileFail(f => (f.key === `${layer}/${tz}` ? { key: f.key, n: f.n + 1 } : { key: `${layer}/${tz}`, n: 1 }))} />)}
         {tileFail.key === `${layer}/${tz}` && tileFail.n > 0 && <div className="rm-offline" role="status">NASA Trek imagery is not responding right now ({tileFail.n} tile{tileFail.n > 1 ? "s" : ""} failed). Clicks, coordinates, routes and the MOLA terrain analysis still work.</div>}
         {measured && <svg width={W} height={H} className="rm-overlay" aria-hidden>

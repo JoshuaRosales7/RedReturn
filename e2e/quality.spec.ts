@@ -8,6 +8,8 @@ const VIEWPORTS = [{ name: "mobile-375", width: 375, height: 812 }, { name: "tab
 async function settle(page: Page, tab: keyof typeof TAB_KEYS) {
   await gotoTab(page, tab);
   await page.waitForTimeout(tab === "risk" ? 4000 : tab === "explorer" ? 3500 : 900);
+  // Let entrance fades finish so contrast is measured on the final colours (spinners and shimmer loop forever and are ignored).
+  await page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity), null, { timeout: 10_000 });
 }
 
 test.describe("Accessibility (axe, WCAG 2 A/AA)", () => {

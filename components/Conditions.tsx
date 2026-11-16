@@ -6,7 +6,7 @@ import { useApiGet } from "@/lib/useApi";
 import { daylightAround, hhmm, localTrueSolarTime, marsTime, seasonOf, solarElevation, suggestedEvaStart, SOL_MS } from "@/lib/marstime";
 import { fmt } from "@/lib/format";
 import type { SpaceWeather, SurfaceImages } from "@/lib/types";
-import { Badge, Loading, Panel, Stat } from "./ui";
+import { Badge, Loading, Panel, Stat, revealImg } from "./ui";
 
 /**
  * Current time, refreshed every minute. Null until mounted in the browser: reading the clock during rendering would make the
@@ -123,7 +123,7 @@ export function GroundView() {
       </div>}
       {r.data?.rover && <>
         <div className="gallery">{r.data.images.map(im => <a key={im.url} href={im.page ?? im.full_url} target="_blank" rel="noreferrer noopener" className="shot">
-          <img src={im.url} alt={`${im.title ?? `${r.data!.rover!.name} image`} (${im.camera}, sol ${im.sol})`} loading="lazy" referrerPolicy="no-referrer" />
+          <img src={im.url} alt={`${im.title ?? `${r.data!.rover!.name} image`} (${im.camera}, sol ${im.sol})`} loading="lazy" referrerPolicy="no-referrer" {...revealImg} />
           <span className="tiny">Sol {im.sol} · {im.camera}</span>
         </a>)}</div>
         {r.data.images.length === 0 && <p className="small muted">No recent images returned by the feed.</p>}

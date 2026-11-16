@@ -28,7 +28,7 @@ function Visor({ legs, start, onClose, maxSlope, o2Reserve }: { legs: Leg[]; sta
   return (
     <div ref={box} className="visor" role="dialog" aria-modal="true" aria-label={`Visor view, leg ${l.n} of ${legs.length}`} tabIndex={-1}>
       <div className="visor-top"><span>LEG {l.n}/{legs.length}</span><span>PLANNING PREVIEW · NO LIVE POSITION</span><button className="visor-x" onClick={onClose} aria-label="Close visor view"><X size={22} /></button></div>
-      <div className="visor-main">
+      <div className="visor-main" key={l.n}>
         <div className="visor-arrow" aria-hidden><Navigation size={120} style={{ transform: `rotate(${l.bearing}deg)` }} /></div>
         <div className="visor-data">
           <div className="visor-big">{fmt(l.bearing, 0)}° <small>{l.compass}</small></div>

@@ -11,7 +11,7 @@ import { CheckCircle2, Globe2, Ruler, RotateCcw, TriangleAlert } from "lucide-re
 import { Badge, Loading, NextStep, NumField, PageHead, Panel } from "../ui";
 import { RegionMap, type MapFocus } from "../RegionMap";
 
-const Globe = dynamic(() => import("../AdvancedMarsGlobe"), { ssr: false, loading: () => <div className="globe"><Loading label="Loading 3D globe…" /></div> });
+const Globe = dynamic(() => import("../AdvancedMarsGlobe"), { ssr: false, loading: () => <div className="globe"><div className="globe-ph" aria-hidden /><Loading label="Loading 3D globe…" lines={0} /></div> });
 
 /** Example routes checked against the API (all four strategies plan). Coordinates are illustrative, not gazetteer features. */
 const EXAMPLES: Record<string, { origin: Point; destination: Point; note: string }> = {

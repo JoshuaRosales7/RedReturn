@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Bot, Send } from "lucide-react";
 import { currentChatKey, useMissionStore, workingStrategy } from "@/lib/store";
 import { STRATEGY_LABEL } from "@/lib/format";
-import { Badge, ErrorState, Loading, NextStep, Notice, PageHead, Panel } from "../ui";
+import { Badge, ErrorState, Loading, NextStep, Notice, PageHead, Panel, Spinner } from "../ui";
 import { PlanStatus } from "../PlanStatus";
 
 const SUGGESTED = ["Why is this route preferable?", "What happens if battery capacity drops by 25%?", "How much additional oxygen would the mission require?",
@@ -23,7 +23,7 @@ export function AresTab() {
       <div className="col c4 side-sticky">
         <Panel title="Ask ARES" tour="ares"><form className="row" style={{ flexWrap: "nowrap" }} onSubmit={e => { e.preventDefault(); void ask(q); }}>
           <input type="text" className="input" value={q} onChange={e => setQ(e.target.value)} placeholder="Ask about the current plan…" aria-label="Question for ARES" maxLength={500} />
-          <button className="btn primary" type="submit" disabled={disabled || !q.trim()} aria-label="Send question"><Send size={14} aria-hidden /></button></form>
+          <button className="btn primary" type="submit" disabled={disabled || !q.trim()} aria-label="Send question">{s.busy.ares ? <Spinner /> : <Send size={14} aria-hidden />}</button></form>
           <div className="stack" style={{ marginTop: 10 }}>{SUGGESTED.map(x => <button key={x} className="btn sm" style={{ justifyContent: "flex-start", textAlign: "left" }} onClick={() => void ask(x)} disabled={disabled}>{x}</button>)}</div>
           {s.apiState === "offline" && <p className="tiny dim" style={{ marginTop: 8 }}>Offline: only the precomputed answers for the Jezero demo route are available.</p>}
         </Panel>

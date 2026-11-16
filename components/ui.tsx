@@ -1,5 +1,5 @@
 "use client";
-import { AlertTriangle, ArrowRight, Info, LoaderCircle } from "lucide-react";
+import { AlertTriangle, ArrowRight, Info } from "lucide-react";
 import { useEffect, useId, useState, type ComponentType, type ReactNode } from "react";
 import type { DatasetLayer } from "@/lib/types";
 import type { Source } from "@/lib/store";
@@ -23,7 +23,19 @@ export function SourceBadge({ source }: { source?: Source }) {
 export function Notice({ children, tone, icon = true }: { children: ReactNode; tone?: "bad" | "info"; icon?: boolean }) {
   return <div className={`notice ${tone ?? ""}`} role={tone === "bad" ? "alert" : "note"}>{icon && (tone === "info" ? <Info size={15} aria-hidden /> : <AlertTriangle size={15} aria-hidden />)}<div>{children}</div></div>;
 }
-export function Loading({ label }: { label: string }) { return <div className="empty" role="status"><LoaderCircle className="spin" size={18} aria-hidden /><span>{label}</span></div>; }
+/** Loading state: appears after a short delay (no flash on fast responses) with a skeleton of the content to come. */
+export function Loading({ label, lines = 3 }: { label: string; lines?: number }) {
+  return <div className="loading" role="status" aria-live="polite"><div className="loading-head"><span className="spin" aria-hidden /><span>{label}</span></div>
+    {lines > 0 && <div className="loading-sk" aria-hidden>{Array.from({ length: lines }, (_, i) => <i key={i} style={{ width: `${[94, 78, 86, 62][i % 4]}%` }} />)}</div>}</div>;
+}
+/** Small spinner for buttons while their action runs. */
+export function Spinner() { return <span className="spin sm" aria-hidden />; }
+/** Fade an <img> in once it has decoded (handles images already complete from cache). */
+export const revealImg = {
+  onLoad: (e: { currentTarget: HTMLImageElement }) => e.currentTarget.classList.add("is-loaded"),
+  onError: (e: { currentTarget: HTMLImageElement }) => e.currentTarget.classList.add("is-loaded"),
+  ref: (el: HTMLImageElement | null) => { if (el?.complete && el.naturalWidth > 0) el.classList.add("is-loaded"); },
+};
 export function Empty({ title, children, actions }: { title: string; children?: ReactNode; actions?: ReactNode }) {
   return <div className="empty"><b>{title}</b>{children && <span className="small">{children}</span>}{actions && <div className="row" style={{ justifyContent: "center" }}>{actions}</div>}</div>;
 }

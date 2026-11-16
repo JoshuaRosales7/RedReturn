@@ -317,3 +317,53 @@ fieldset.ptset legend { padding: 0; margin-bottom: 2px; }
   .tscroll { overflow: visible; }
 }
 .rm-offline { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); max-width: 90%; padding: 6px 10px; border-radius: 6px; background: rgba(10,13,17,.9); border: 1px solid #6b5226; color: #e8cf9b; font-size: 12px; text-align: center; pointer-events: none; }
+
+/* ---------- motion: nothing pops in; everything settles into place ---------- */
+:root { --ease-out: cubic-bezier(.2, .7, .2, 1); }
+@keyframes rr-fade { from { opacity: 0; } }
+@keyframes rr-rise { from { opacity: 0; translate: 0 8px; } }
+@keyframes rr-pop { from { opacity: 0; scale: .97; } }
+/* Tab views and every card, notice and stat ease in when they mount (backwards fill: no lingering transform afterwards). */
+.main > * { animation: rr-fade .28s ease-out backwards; }
+.pagehead, .flow, .panel, .stat, .notice, .nextstep, .msg, .cmp, .gallery .shot { animation: rr-rise .42s var(--ease-out) backwards; }
+:where(.panel, .stat, .shot, .msg):nth-child(2) { animation-delay: .05s; }
+:where(.panel, .stat, .shot, .msg):nth-child(3) { animation-delay: .1s; }
+:where(.panel, .stat, .shot, .msg):nth-child(4) { animation-delay: .15s; }
+:where(.panel, .stat, .shot, .msg):nth-child(5) { animation-delay: .2s; }
+:where(.panel, .stat, .shot, .msg):nth-child(n+6) { animation-delay: .25s; }
+.panel .panel, .panel .stat { animation-name: rr-fade; }
+/* Dialogs and overlays */
+.tour-backdrop { animation: rr-fade .25s ease-out backwards; }
+.tour, .glossary { animation: rr-pop .3s var(--ease-out) backwards; }
+.visor { animation: rr-fade .3s ease-out backwards; }
+.visor-main { animation: rr-rise .35s var(--ease-out) backwards; }
+.rm-offline, .globe-hint, .globe-res { animation: rr-fade .3s ease-out backwards; }
+
+/* Loading state: a short delay so fast responses never flash a spinner, then a calm skeleton of what is coming. */
+.loading { display: grid; gap: 14px; padding: 22px 14px; color: var(--muted); animation: rr-fade .3s ease-out .15s backwards; }
+.loading-head { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; font-size: 13px; }
+.loading-head .spin { flex: none; }
+.loading-sk { display: grid; gap: 9px; width: min(560px, 100%); margin: 0 auto; }
+.loading-sk i, .sk-line { display: block; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--panel2) 0, #1f2a37 50%, var(--panel2) 100%); background-size: 200% 100%; animation: sk 1.4s ease-in-out infinite; }
+.spin.sm { width: 12px; height: 12px; border-width: 2px; }
+.btn .spin { border-color: rgba(255,255,255,.18); border-top-color: currentColor; }
+
+/* Images reveal once decoded, over a shimmering placeholder */
+.shot img { background: linear-gradient(90deg, #0d1218 0, #18212c 50%, #0d1218 100%); background-size: 200% 100%; animation: sk 1.4s ease-in-out infinite; }
+.shot img, .rm-tile { opacity: 0; transition: opacity .45s ease-out; }
+.shot img.is-loaded { opacity: 1; animation: none; background: #000; }
+.rm-tile.is-loaded { opacity: 1; }
+/* 3D views fade in instead of flashing a black canvas */
+.mesh-stage canvas { animation: rr-fade .6s ease-out backwards; }
+.mesh-ph { display: grid; place-items: center; height: clamp(340px, 52vh, 560px); background: #07090c; border-radius: var(--r); }
+@media (max-width: 760px) { .mesh-ph { height: clamp(300px, 46vh, 420px); } }
+.globe canvas { opacity: 0; transition: opacity .8s ease-out; }
+.globe.ready canvas { opacity: 1; }
+.globe-ph { position: absolute; left: 50%; top: 50%; width: min(46%, 300px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 36% 30%, rgba(232,121,74,.22), rgba(120,50,30,.10) 55%, transparent 72%); box-shadow: 0 0 60px rgba(232,121,74,.08); animation: rr-breathe 2.4s ease-in-out infinite; }
+@keyframes rr-breathe { 50% { opacity: .55; scale: .985; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .shot img, .rm-tile, .globe canvas { opacity: 1 !important; }
+}
+@media print { *, *::before, *::after { animation: none !important; } .shot img, .rm-tile { opacity: 1 !important; } }
